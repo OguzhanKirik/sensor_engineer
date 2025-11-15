@@ -1,4 +1,4 @@
-# Sensor Fusion Engineer Tasks
+# Sensor Fusion Engineer
 
 This repository showcases a series of hands-on projects developed during the Udacity Sensor Fusion Nanodegree. It encompasses the integration and processing of data from LiDAR, radar, and camera sensors, culminating in the application of Kalman Filters for object tracking.
 
@@ -36,6 +36,3 @@ The projects within this repository are designed to simulate real-world scenario
 * [Udacity Sensor Fusion Nanodegree](https://www.udacity.com/course/sensor-fusion-engineer-nanodegree--nd313)
 
 
-## 📬 Contact
-
-For questions or collaborations, feel free to reach out via kirikoguzhan@gmail.com.
