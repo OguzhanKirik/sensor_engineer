@@ -4,7 +4,7 @@ This repository covers the full pipeline for lidar-based obstacle detection, inc
 
 ---
 
-## 📚 Lessons Overview (24 Hours Total)
+## Overview 
 
 ### **L1: Introduction to Lidar and Point Clouds**
 The fundamentals of lidar sensing and 3D point clouds.  
