@@ -1,4 +1,4 @@
-# Sensor Fusion — Course Overview
+# Sensor Fusion 
 
 This repository summarizes the lessons and projects from a Sensor Fusion curriculum focused on combining camera and lidar data for perception tasks in autonomous systems. The course includes feature tracking, collision detection, sensor integration, and 3D object tracking techniques.
 
