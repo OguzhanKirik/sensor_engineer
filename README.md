@@ -5,7 +5,7 @@ Each section provides foundational theory paired with practical implementations 
 
 ---
 
-# 🚗 **Course Modules Overview**
+# ** Overview**
 
 ## 1. **Lidar Obstacle Detection **
 
