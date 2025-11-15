@@ -1,4 +1,4 @@
-# Sensor Fusion, Camera, Radar, and Lidar — Complete Course Summary
+# Sensor Fusion, Camera, Radar, and Lidar 
 
 This repository consolidates key concepts, lessons, and project summaries from a multi-module program covering **Lidar**, **Radar**, **Computer Vision**, **Kalman Filters**, and **Sensor Fusion**.  
 Each section provides foundational theory paired with practical implementations in C++, Python, and MATLAB.
