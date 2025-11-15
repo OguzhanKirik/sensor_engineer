@@ -1,38 +1,136 @@
-# Sensor Fusion Engineer
+# Sensor Fusion, Camera, Radar, and Lidar — Complete Course Summary
 
-This repository showcases a series of hands-on projects developed during the Udacity Sensor Fusion Nanodegree. It encompasses the integration and processing of data from LiDAR, radar, and camera sensors, culminating in the application of Kalman Filters for object tracking.
+This repository consolidates key concepts, lessons, and project summaries from a multi-module program covering **Lidar**, **Radar**, **Computer Vision**, **Kalman Filters**, and **Sensor Fusion**.  
+Each section provides foundational theory paired with practical implementations in C++, Python, and MATLAB.
 
-## 🚗 Overview
+---
 
-The projects within this repository are designed to simulate real-world scenarios encountered in autonomous vehicle perception systems. Each module focuses on a specific sensor modality or fusion technique, providing a comprehensive understanding of multi-sensor integration.
+# 🚗 **Course Modules Overview**
 
-## 📁 Project Structure
+## 1. **Lidar Obstacle Detection **
 
-* **Camera**: Projects related to image processing, object detection, and lane detection using camera data.
-* **Radar**: Exercises focusing on processing radar measurements, including range and velocity estimation.
-* **LiDAR**: Tasks involving point cloud processing, obstacle detection, and distance measurement using LiDAR data.
-* **UnscentedKalmanFilter**: Implementation of the Unscented Kalman Filter (UKF) for fusing data from multiple sensors to track dynamic objects.
+### **L1: Introduction to Lidar & Point Clouds**
+- Learn the basics of lidar technology and point cloud data.
+- Use a simulated highway environment to generate and visualize point clouds.
 
-## 🧠 Key Concepts
+### **L2: Point Cloud Segmentation**
+- Apply RANSAC plane fitting to segment road points from obstacles.
 
-* **Sensor Data Processing**: Techniques for handling and interpreting raw data from LiDAR, radar, and camera sensors.
-* **Sensor Fusion**: Combining data from multiple sensors to achieve more accurate and reliable information than could be obtained from a single sensor.
-* **Kalman Filtering**: Application of Kalman Filters, including the Extended and Unscented variants, for estimating the state of moving objects in the presence of noise and uncertainty.
+### **L3: Clustering Obstacles**
+- Use KD-Trees and Euclidean clustering for fast obstacle grouping.
 
-## 🛠️ Technologies Used
+### **L4: Working with Real PCD**
+- Run your full pipeline on real-world point cloud data.
 
-* Programming Languages: C++, Python
-* Libraries and Tools: OpenCV, PCL (Point Cloud Library), Eigen
-* Platforms: Ubuntu, ROS (Robot Operating System)
+### **L5 Project: Lidar Obstacle Detection**
+- Build a complete detection pipeline: segmentation → clustering → bounding boxes.
 
-## 📷 Sample Visualizations
+---
 
-![Sensor Fusion Diagram](https://www.thinkautonomous.ai/blog/sensor-fusion/)
+## 2. **Radar Signal Processing**
 
-*Diagram illustrating the fusion of LiDAR and radar data using a Kalman Filter.*
+### **L1: Introduction**
+- Overview of radar systems and their applications.
 
-## 📚 References
+### **L2: Radar Principles Review**
+- FMCW radar fundamentals  
+- Hardware & schematics  
+- Radar equation and signal power relationships  
 
-* [Udacity Sensor Fusion Nanodegree](https://www.udacity.com/course/sensor-fusion-engineer-nanodegree--nd313)
+### **L3: Range–Doppler Estimation**
+- Estimate range and velocity using FFT and Doppler processing.
 
+### **L4: Clutter, CFAR, AoA & Clustering**
+- Learn clutter formation and removal using CFAR  
+- Estimate Angle of Arrival (AoA)  
+- Perform clustering on radar detections  
 
+---
+
+## 3. **Computer Vision & TTC Estimation**
+
+### **L1: Autonomous Vehicles & Computer Vision**
+- Levels of autonomy  
+- Typical sensor suites  
+- Camera fundamentals  
+- Intro to OpenCV  
+
+### **L2: Engineering a Collision Detection System**
+- Compute **Time-to-Collision (TTC)** using lidar and camera.
+
+### **L3: Tracking Image Features**
+- Learn image gradients, filtering, corner detection, feature tracking.
+
+### **L4 Project: 2D Feature Tracking**
+- Build a complete 2D feature-tracking pipeline in OpenCV.
+
+---
+
+## 4. **Camera + Lidar Sensor Fusion**
+
+### **L5: Combining Camera and Lidar**
+- Fuse 2D image data with 3D lidar points for improved robustness.
+
+### **L6 Project: Track an Object in 3D Space**
+- Build a multi-sensor fusion tracker to estimate TTC and motion in 3D.
+
+---
+
+## 5. **Kalman Filters & Real-Time Tracking**
+
+### **L1: Kalman Filters (Python)**
+- Learn from Sebastian Thrun  
+- Understand prediction & update cycles  
+- Implement a Kalman Filter in Python  
+
+### **L2: Lidar & Radar Fusion with Kalman Filters (C++)**
+- Implement a high-performance **Extended Kalman Filter (EKF)** in C++  
+- Fuse radar and lidar measurements for real-time tracking  
+
+---
+
+## 6. **Unscented Kalman Filter (UKF)**
+
+### **L3: Unscented Kalman Filters**
+- Overcome EKF limitations with nonlinear motion  
+- Use sigma points & the Unscented Transform  
+- Apply UKF to lidar/radar fusion  
+
+### **L4 Project: UKF Highway Object Tracking**
+- Build a complete UKF tracking pipeline for multiple vehicles on a highway.
+
+---
+
+# 📡 7. **1D & 2D CFAR Detection (Radar Filtering)**
+
+### **1D CFAR**
+Includes MATLAB tools for:
+- FMCW radar generation  
+- Range/Doppler detection  
+- Frequency estimation  
+- Maximum range computation  
+
+### **2D CFAR Algorithm Summary**
+1. Select training + guard cells  
+2. Convert training cells from dB → linear  
+3. Exclude guard cells & CUT  
+4. Compute average noise, convert back to dB, add offset  
+5. Compare CUT to threshold  
+6. Mark detections  
+
+---
+
+# 🧰 **Technologies & Tools Used**
+- **C++17**, **Python**, **MATLAB**
+- **Point Cloud Library (PCL)**  
+- **OpenCV**  
+- **Udacity Lidar & Radar simulators**  
+- **FMCW Radar models**  
+- **Kalman Filters (KF, EKF, UKF)**  
+- **KD-Tree data structures**  
+
+---
+> **Note:** This project uses the official **Udacity Fixed-Wing Simulator** and includes **partial control code** intended for educational and practice purposes.
+ 
+
+---
