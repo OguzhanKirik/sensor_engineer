@@ -1,14 +1,17 @@
-2D CFAR Algorithm Description
-1.Select a number of training cells and guard cells around each Cell Under Test (CUT).
+1DCfar Practice
 
-2.For each CUT, estimate the average noise level by summing the signal levels of all training cells, after converting the values from dB to linear scale using db2pow.
+This repository contains MATLAB scripts focused on radar signal processing, including target generation, detection, Doppler estimation, and range analysis.
 
-3.Exclude guard cells and the CUT itself when estimating the noise level.
+Files Included
 
-4.After averaging the noise, convert the value back to dB using pow2db and add an offset (in dB) to set the detection threshold.
+Radar_Target_Generation_and_Detection.m
+Generates FMCW radar target signals and performs detection using range and Doppler processing.
 
-5.Compare the CUT value to the threshold:
+doppler_estimation.m
+Script or functions for estimating the Doppler shift to determine target velocity.
 
-6.If the CUT value is greater than the threshold, declare a detection (set to 1).
+estimate_frequency_shifts.m
+Calculates frequency shifts in received radar signals, supporting beat-frequency or Doppler analysis.
 
-7.Otherwise, no detection.
+estimate_max_range.m
+Computes the maximum detectable range of a radar system based on system parameters.
