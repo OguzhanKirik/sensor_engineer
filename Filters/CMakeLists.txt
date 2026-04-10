@@ -15,14 +15,33 @@ list(INSERT CMAKE_PREFIX_PATH 0 "${CMAKE_BINARY_DIR}")
 find_package(PCL 1.2 REQUIRED)
 
 include_directories(${PCL_INCLUDE_DIRS})
+include_directories(${CMAKE_SOURCE_DIR}/src)
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
 
 
-add_executable (filters_highway src/main.cpp src/ukf.cpp src/ekf.cpp src/tools.cpp src/render/render.cpp)
+add_executable (filters_highway 
+    src/main.cpp 
+    src/filters/ukf/ukf.cpp 
+    src/filters/ekf/ekf.cpp 
+    src/tools.cpp 
+    src/render/render.cpp
+)
 target_link_libraries (filters_highway ${PCL_LIBRARIES})
 
-
-
-
+# IMM Filter executable with 4 models
+add_executable (imm_highway 
+    src/main.cpp 
+    src/filters/ukf/ukf.cpp 
+    src/filters/ekf/ekf.cpp 
+    src/motion_models/cv_ekf.cpp
+    src/motion_models/ca_ekf.cpp
+    src/motion_models/ctrv_ukf.cpp 
+    src/motion_models/ctra_ukf.cpp
+    src/filters/imm/IMM.cpp 
+    src/tools.cpp 
+    src/render/render.cpp
+)
+target_link_libraries (imm_highway ${PCL_LIBRARIES})
+target_compile_definitions(imm_highway PRIVATE USE_IMM)

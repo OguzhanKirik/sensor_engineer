@@ -9,8 +9,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include "../ukf.h"
-#include "../ekf.hpp"
+#include "../filters/ukf/ukf.h"
+#include "../filters/ekf/ekf.hpp"
 
 struct Color
 {
