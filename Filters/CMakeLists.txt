@@ -26,6 +26,7 @@ add_executable (filters_highway
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
     src/filters/ckf/ckf.cpp
+    src/filters/pf/pf.cpp
     src/tools.cpp 
     src/render/render.cpp
 )
@@ -37,6 +38,7 @@ add_executable (ckf_highway
     src/filters/ckf/ckf.cpp 
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
+    src/filters/pf/pf.cpp
     src/tools.cpp 
     src/render/render.cpp
 )
@@ -49,6 +51,7 @@ add_executable (ekf_highway
     src/filters/ekf/ekf.cpp 
     src/filters/ukf/ukf.cpp 
     src/filters/ckf/ckf.cpp
+    src/filters/pf/pf.cpp
     src/tools.cpp 
     src/render/render.cpp
 )
@@ -61,11 +64,25 @@ add_executable (ukf_highway
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
     src/filters/ckf/ckf.cpp
+    src/filters/pf/pf.cpp
     src/tools.cpp 
     src/render/render.cpp
 )
 target_link_libraries (ukf_highway ${PCL_LIBRARIES})
 target_compile_definitions(ukf_highway PRIVATE USE_UKF)
+
+# PF Filter executable (Particle Filter)
+add_executable (pf_highway 
+    src/main.cpp 
+    src/filters/pf/pf.cpp
+    src/filters/ukf/ukf.cpp 
+    src/filters/ekf/ekf.cpp 
+    src/filters/ckf/ckf.cpp
+    src/tools.cpp 
+    src/render/render.cpp
+)
+target_link_libraries (pf_highway ${PCL_LIBRARIES})
+target_compile_definitions(pf_highway PRIVATE USE_PF)
 
 # IMM Filter executable with 4 models
 add_executable (imm_highway 
@@ -73,6 +90,7 @@ add_executable (imm_highway
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
     src/filters/ckf/ckf.cpp
+    src/filters/pf/pf.cpp
     src/motion_models/cv_ekf.cpp
     src/motion_models/ca_ekf.cpp
     src/motion_models/ctrv_ukf.cpp 

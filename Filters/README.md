@@ -4,10 +4,11 @@ Multi-model Kalman Filter implementation for highway vehicle tracking using sens
 
 <img src="media/ukf_highway_tracked.gif" width="700" height="400" />
 
-This project implements four different Kalman filter approaches:
+This project implements five different filter approaches:
 - **EKF** (Extended Kalman Filter) - Linear approximation-based tracking
 - **UKF** (Unscented Kalman Filter) - Sigma points-based nonlinear tracking
 - **CKF** (Cubature Kalman Filter) - Deterministic sampling-based nonlinear tracking
+- **PF** (Particle Filter) - Sequential Monte Carlo tracking with weighted particles
 - **IMM** (Interacting Multiple Model) - Advanced 4-model adaptive filter
 
 The goal is to estimate the state of multiple cars on a highway using noisy lidar and radar measurements with minimal RMSE (Root Mean Square Error).
@@ -47,6 +48,9 @@ Filters/
 │   │   │   ├── ckf.h
 │   │   │   ├── ckf.cpp
 │   │   │   └── CKF_README.md
+│   │   ├── pf/                 # Particle Filter
+│   │   │   ├── pf.h
+│   │   │   └── pf.cpp
 │   │   └── imm/                # Interacting Multiple Model Filter
 │   │       ├── IMM.hpp
 │   │       ├── IMM.cpp
@@ -67,6 +71,7 @@ Filters/
     ├── ekf_highway             # EKF-only executable
     ├── ukf_highway             # UKF-only executable
     ├── ckf_highway             # CKF-only executable
+  ├── pf_highway              # PF-only executable
     └── imm_highway             # IMM executable
 ```
 
@@ -74,7 +79,7 @@ Filters/
 
 ## Available Executables
 
-The project builds **5 different executables** for testing different filter combinations:
+The project builds **6 different executables** for testing different filter combinations:
 
 ### Individual Filter Executables (Recommended for Testing)
 
@@ -83,6 +88,7 @@ The project builds **5 different executables** for testing different filter comb
 | **ekf_highway** | EKF only | Test Extended Kalman Filter performance |
 | **ukf_highway** | UKF only | Test Unscented Kalman Filter performance |
 | **ckf_highway** | CKF only | Test Cubature Kalman Filter performance |
+| **pf_highway** | PF only | Test Particle Filter performance |
 | **imm_highway** | IMM (4-model) | Test advanced adaptive multi-model filter |
 | **filters_highway** | EKF + UKF + CKF | Multi-filter executable (can switch via code) |
 
@@ -92,6 +98,7 @@ cd build
 ./ekf_highway    # Test EKF
 ./ukf_highway    # Test UKF
 ./ckf_highway    # Test CKF
+./pf_highway     # Test PF
 ./imm_highway    # Test IMM
 ```
 
@@ -106,6 +113,7 @@ Typical RMSE results on the highway scenario:
 | **EKF** | 0.039 m | 0.165 m | 0.684 m/s | 0.474 m/s | Very Fast ⚡ | Linear approximation, good for straight roads |
 | **UKF** | 0.039 m | 0.191 m | 0.684 m/s | 0.614 m/s | Fast | Better with turns, handles nonlinearity better |
 | **CKF** | 0.101 m | 0.329 m | 0.684 m/s | 0.573 m/s | Fast | Deterministic sampling, alternative to UKF |
+| **PF** | 0.27 m (0s) | 0.18 m (0s) | 3.54 m/s (0s) | 0.49 m/s (0s) | Slow | Baseline tuned PF; useful for comparison but needs more tuning |
 | **IMM** | ~0.03 m | ~0.12 m | ~0.35 m/s | ~0.45 m/s | Slower 🔄 | Adaptive multi-model, best overall |
 
 ---
@@ -126,6 +134,61 @@ Typical RMSE results on the highway scenario:
 - **EKF**: Uses first-order Taylor expansion (Jacobian). Fastest but assumes near-linearity.
 - **UKF**: Uses unscented transform with 2n+1 sigma points. Better nonlinearity handling.
 - **CKF**: Uses cubature rule with 2n sigma points. Similar to UKF but with equal weights.
+
+## Particle Filter Tuning Parameters
+
+Current PF tuning values are in `src/filters/pf/pf.cpp`:
+
+### Core PF Parameters
+
+- `n_particles_ = 1200`
+- `std_a_ = 0.35`
+- `std_yawdd_ = 0.25`
+
+### Sensor Noise (likelihood model)
+
+- `std_laspx_ = 0.15`
+- `std_laspy_ = 0.15`
+- `std_radr_ = 0.3`
+- `std_radphi_ = 0.03`
+- `std_radrd_ = 0.3`
+
+### Initialization Spread
+
+- position: `sigma_px = 0.25`, `sigma_py = 0.25`
+- speed: `sigma_v = 0.6`
+- yaw: `sigma_yaw = 0.8`
+- yaw-rate: `sigma_yawd = 0.2`
+
+### Resampling Controls
+
+- adaptive resampling trigger: `ESS < 0.55 * N`
+- resampling method: systematic
+- roughening after resample:
+  - `sigma_px = 0.03`, `sigma_py = 0.03`
+  - `sigma_v = 0.06`, `sigma_yaw = 0.01`, `sigma_yawd = 0.01`
+
+### Radar Bootstrap Choice
+
+- `x_(2) = abs(rho_dot)`
+- `x_(3) = phi`
+
+These are the exact parameters currently being tweaked for PF benchmarking.
+
+### Quick Presets For Comparison
+
+| Preset | n_particles | std_a | std_yawdd | ESS trigger | Roughening | Expected Behavior |
+|--------|-------------|-------|-----------|-------------|------------|-------------------|
+| **Default-Fast** | 600 | 0.45 | 0.35 | `0.50 * N` | light | Faster runtime, lower stability |
+| **Current-Balanced** | 1200 | 0.35 | 0.25 | `0.55 * N` | light | Best current tradeoff |
+| **Accuracy-Heavy** | 2000 | 0.25 | 0.20 | `0.60 * N` | very light | Better position tracking, slowest runtime |
+
+Suggested workflow:
+
+1. Start with **Current-Balanced**.
+2. If PF diverges in position, increase `n_particles_` and lower `std_a_` slightly.
+3. If PF lags turns, raise `std_yawdd_` by small steps (e.g. `+0.03`).
+4. If PF collapses to a few particles, increase ESS threshold or roughening noise slightly.
 
 ## Filter Selection Guide
 

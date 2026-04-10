@@ -25,6 +25,8 @@ public:
 	bool use_ekf = true;
 	// Use CKF (Cubature Kalman Filter)
 	bool use_ckf = false;
+	// Use PF (Particle Filter)
+	bool use_pf = false;
 	// Visualize sensor measurements
 	bool visualize_lidar = true;
 	bool visualize_radar = true;
@@ -39,12 +41,19 @@ public:
 		#ifdef USE_EKF
 		use_ekf = true;
 		use_ckf = false;
+		use_pf = false;
 		#elif defined(USE_UKF)
 		use_ekf = false;
 		use_ckf = false;
+		use_pf = false;
 		#elif defined(USE_CKF)
 		use_ckf = true;
 		use_ekf = false;
+		use_pf = false;
+		#elif defined(USE_PF)
+		use_pf = true;
+		use_ekf = false;
+		use_ckf = false;
 		#endif
 
 		tools = Tools();
@@ -66,7 +75,12 @@ public:
 		car1.setInstructions(car1_instructions);
 		if( trackCars[0] )
 		{
-			if(use_ckf)
+			if(use_pf)
+			{
+				PF pf1;
+				car1.setPF(pf1);
+			}
+			else if(use_ckf)
 			{
 				CKF ckf1;
 				car1.setCKF(ckf1);
@@ -93,7 +107,12 @@ public:
 		car2.setInstructions(car2_instructions);
 		if( trackCars[1] )
 		{
-			if(use_ckf)
+			if(use_pf)
+			{
+				PF pf2;
+				car2.setPF(pf2);
+			}
+			else if(use_ckf)
 			{
 				CKF ckf2;
 				car2.setCKF(ckf2);
@@ -130,7 +149,12 @@ public:
 	car3.setInstructions(car3_instructions);
 	if( trackCars[2] )
 	{
-		if(use_ckf)
+		if(use_pf)
+		{
+			PF pf3;
+			car3.setPF(pf3);
+		}
+		else if(use_ckf)
 		{
 			CKF ckf3;
 			car3.setCKF(ckf3);
@@ -193,6 +217,8 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 				x_state = traffic[i].ekf.x_;
 			} else if(traffic[i].use_ckf) {
 				x_state = traffic[i].ckf.x_;
+			} else if(traffic[i].use_pf) {
+				x_state = traffic[i].pf.x_;
 			} else {
 				x_state = traffic[i].ukf.x_;
 			}

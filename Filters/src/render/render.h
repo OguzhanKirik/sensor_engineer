@@ -12,6 +12,7 @@
 #include "../filters/ukf/ukf.h"
 #include "../filters/ekf/ekf.hpp"
 #include "../filters/ckf/ckf.h"
+#include "../filters/pf/pf.h"
 
 struct Color
 {
@@ -73,8 +74,10 @@ struct Car
 	UKF ukf;
 	EKF ekf;
 	CKF ckf;
+	PF pf;
 	bool use_ekf;
 	bool use_ckf;
+	bool use_pf;
 
 	//accuation instructions
 	std::vector<accuation> instructions;
@@ -85,7 +88,11 @@ struct Car
 
 	Car()
 		: position(Vect3(0,0,0)), dimensions(Vect3(0,0,0)), color(Color(0,0,0))
-	{}
+	{
+		use_ekf = false;
+		use_ckf = false;
+		use_pf = false;
+	}
  
 	Car(Vect3 setPosition, Vect3 setDimensions, Color setColor, float setVelocity, float setAngle, float setLf, std::string setName)
 		: position(setPosition), dimensions(setDimensions), color(setColor), velocity(setVelocity), angle(setAngle), Lf(setLf), name(setName)
@@ -96,6 +103,7 @@ struct Car
 		accuateIndex = -1;
 		use_ekf = false;
 		use_ckf = false;
+		use_pf = false;
 
 		sinNegTheta = sin(-angle);
 		cosNegTheta = cos(-angle);
@@ -155,6 +163,7 @@ struct Car
 		ukf = tracker;
 		use_ekf = false;
 		use_ckf = false;
+		use_pf = false;
 	}
 
 	void setEKF(EKF tracker)
@@ -162,6 +171,7 @@ struct Car
 		ekf = tracker;
 		use_ekf = true;
 		use_ckf = false;
+		use_pf = false;
 	}
 
 	void setCKF(CKF tracker)
@@ -169,6 +179,15 @@ struct Car
 		ckf = tracker;
 		use_ekf = false;
 		use_ckf = true;
+		use_pf = false;
+	}
+
+	void setPF(PF tracker)
+	{
+		pf = tracker;
+		use_ekf = false;
+		use_ckf = false;
+		use_pf = true;
 	}
 
 	void move(float dt, int time_us)
