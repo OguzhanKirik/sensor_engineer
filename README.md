@@ -1,3 +1,150 @@
+# Sensor Fusion Engineer Projects
+
+A comprehensive collection of sensor fusion, computer vision, and object tracking implementations for autonomous systems.
+
+## 📁 Repository Structure
+
+### 🎥 Camera
+Camera-based perception projects including feature detection, tracking, and 3D object tracking.
+
+- **Camera-Exercises**: Fundamental camera calibration and computer vision exercises
+- **SFND_2D_Feature_Matching**: 2D feature detection and matching implementation
+- **SFND_3D_Object_Tracking**: 3D object tracking using camera data and lidar fusion
+
+### 📊 Kalman Filters
+
+#### KalmanFillter
+Basic Kalman filter implementations and exercises for state estimation.
+
+#### Filters (UKF/EKF Highway Project)
+Advanced Kalman filter implementations for highway vehicle tracking:
+- **Extended Kalman Filter (EKF)**: Linear approximation-based filtering
+- **Unscented Kalman Filter (UKF)**: Sigma point-based filtering for non-linear systems
+- **Sensor Fusion**: Combines radar and lidar measurements
+- **Real-time Tracking**: Multi-vehicle highway scenario with visualization
+
+**Features:**
+- CTRV (Constant Turn Rate and Velocity) motion model
+- Radar and Lidar sensor fusion
+- RMSE-based performance evaluation
+- PCL-based 3D visualization
+
+See [Filters/README.md](Filters/README.md) for detailed setup and build instructions.
+
+### 📡 Radar
+Radar signal processing and target detection implementations.
+
+### 🔦 Lidar
+Lidar point cloud processing, clustering, and object detection projects.
+
+## 🛠️ Prerequisites
+
+### General Dependencies
+- **CMake** >= 3.5
+- **Make** >= 4.1 (Linux, Mac), 3.81 (Windows)
+- **GCC/G++** >= 5.4
+- **C++11** or higher
+
+### Library Dependencies
+- **Eigen3**: Linear algebra library
+- **PCL** (Point Cloud Library): For lidar processing and 3D visualization
+- **OpenCV**: For camera-based projects
+
+### Installation (macOS)
+```bash
+# Install build tools
+xcode-select --install
+
+# Install dependencies via Homebrew
+brew install cmake
+brew install eigen
+brew install pcl
+brew install opencv
+```
+
+### Installation (Linux - Ubuntu/Debian)
+```bash
+sudo apt-get update
+sudo apt-get install cmake build-essential
+sudo apt-get install libeigen3-dev
+sudo apt-get install libpcl-dev
+sudo apt-get install libopencv-dev
+```
+
+## 🚀 Quick Start
+
+Each project contains its own build instructions. General build pattern:
+
+```bash
+# Navigate to project directory
+cd <project-name>
+
+# Create build directory
+mkdir build && cd build
+
+# Configure and build
+cmake ..
+make
+
+# Run executable
+./<executable-name>
+```
+
+## 📚 Project Details
+
+### Filters (UKF/EKF)
+Multi-object tracking on a highway using sensor fusion:
+```bash
+cd Filters/build
+./ukf_highway    # UKF implementation
+./filters_highway # EKF implementation
+```
+
+### Camera Projects
+Feature detection, matching, and 3D object tracking:
+```bash
+cd Camera/SFND_2D_Feature_Matching/build
+make
+./2D_feature_tracking
+```
+
+## 📖 Learning Resources
+
+This repository contains implementations from:
+- Sensor Fusion Nanodegree projects
+- Computer Vision fundamentals
+- Kalman Filtering techniques
+- Point Cloud Processing
+
+## 🎯 Key Concepts Covered
+
+- **State Estimation**: EKF, UKF, Particle Filters
+- **Sensor Fusion**: Combining lidar, radar, and camera data
+- **Object Tracking**: Multi-object tracking and data association
+- **Feature Detection**: SIFT, SURF, ORB, FAST, BRIEF
+- **Point Cloud Processing**: Segmentation, clustering, filtering
+- **Motion Models**: CTRV, CV, CA models
+
+## 📝 Code Style
+
+Projects follow [Google's C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+
+## 🔗 Original Sources
+
+Some projects are based on Udacity's Sensor Fusion Nanodegree:
+- [SFND_Unscented_Kalman_Filter](https://github.com/udacity/SFND_Unscented_Kalman_Filter)
+
+## 📄 License
+
+Individual projects may have their own licenses. Please check each project directory.
+
+## 👤 Author
+
+Oguzhan Kirik - [GitHub](https://github.com/OguzhanKirik)
+
+---
+
+**Note**: For specific project setup and detailed instructions, refer to the README.md file in each project directory.
 # SFND_Unscented_Kalman_Filter
 Sensor Fusion UKF Highway Project Starter Code
 
