@@ -1,136 +1,76 @@
-# Sensor Fusion, Camera, Radar, and Lidar 
+# SFND_Unscented_Kalman_Filter
+Sensor Fusion UKF Highway Project Starter Code
 
-This repository consolidates key concepts, lessons, and project summaries from a multi-module program covering **Lidar**, **Radar**, **Computer Vision**, **Kalman Filters**, and **Sensor Fusion**.  
-Each section provides foundational theory paired with practical implementations in C++, Python, and MATLAB.
+<img src="media/ukf_highway_tracked.gif" width="700" height="400" />
 
----
+In this project you will implement an Unscented Kalman Filter to estimate the state of multiple cars on a highway using noisy lidar and radar measurements. Passing the project requires obtaining RMSE values that are lower that the tolerance outlined in the project rubric. 
 
-# ** Overview**
+The main program can be built and ran by doing the following from the project top directory.
 
-## 1. **Lidar Obstacle Detection **
+1. mkdir build
+2. cd build
+3. cmake ..
+4. make
+5. ./ukf_highway
 
-### **L1: Introduction to Lidar & Point Clouds**
-- Learn the basics of lidar technology and point cloud data.
-- Use a simulated highway environment to generate and visualize point clouds.
+Note that the programs that need to be written to accomplish the project are src/ukf.cpp, and src/ukf.h
 
-### **L2: Point Cloud Segmentation**
-- Apply RANSAC plane fitting to segment road points from obstacles.
+The program main.cpp has already been filled out, but feel free to modify it.
 
-### **L3: Clustering Obstacles**
-- Use KD-Trees and Euclidean clustering for fast obstacle grouping.
+<img src="media/ukf_highway.png" width="700" height="400" />
 
-### **L4: Working with Real PCD**
-- Run your full pipeline on real-world point cloud data.
+`main.cpp` is using `highway.h` to create a straight 3 lane highway environment with 3 traffic cars and the main ego car at the center. 
+The viewer scene is centered around the ego car and the coordinate system is relative to the ego car as well. The ego car is green while the 
+other traffic cars are blue. The traffic cars will be accelerating and altering their steering to change lanes. Each of the traffic car's has
+it's own UKF object generated for it, and will update each indidual one during every time step. 
 
-### **L5 Project: Lidar Obstacle Detection**
-- Build a complete detection pipeline: segmentation → clustering → bounding boxes.
-
----
-
-## 2. **Radar Signal Processing**
-
-### **L1: Introduction**
-- Overview of radar systems and their applications.
-
-### **L2: Radar Principles Review**
-- FMCW radar fundamentals  
-- Hardware & schematics  
-- Radar equation and signal power relationships  
-
-### **L3: Range–Doppler Estimation**
-- Estimate range and velocity using FFT and Doppler processing.
-
-### **L4: Clutter, CFAR, AoA & Clustering**
-- Learn clutter formation and removal using CFAR  
-- Estimate Angle of Arrival (AoA)  
-- Perform clustering on radar detections  
+The red spheres above cars represent the (x,y) lidar detection and the purple lines show the radar measurements with the velocity magnitude along the detected angle. The Z axis is not taken into account for tracking, so you are only tracking along the X/Y axis.
 
 ---
 
-## 3. **Computer Vision & TTC Estimation**
+## Other Important Dependencies
+* cmake >= 3.5
+  * All OSes: [click here for installation instructions](https://cmake.org/install/)
+* make >= 4.1 (Linux, Mac), 3.81 (Windows)
+  * Linux: make is installed by default on most Linux distros
+  * Mac: [install Xcode command line tools to get make](https://developer.apple.com/xcode/features/)
+  * Windows: [Click here for installation instructions](http://gnuwin32.sourceforge.net/packages/make.htm)
+* gcc/g++ >= 5.4
+  * Linux: gcc / g++ is installed by default on most Linux distros
+  * Mac: same deal as make - [install Xcode command line tools](https://developer.apple.com/xcode/features/)
+  * Windows: recommend using [MinGW](http://www.mingw.org/)
+ * PCL 1.2
 
-### **L1: Autonomous Vehicles & Computer Vision**
-- Levels of autonomy  
-- Typical sensor suites  
-- Camera fundamentals  
-- Intro to OpenCV  
+## Basic Build Instructions
 
-### **L2: Engineering a Collision Detection System**
-- Compute **Time-to-Collision (TTC)** using lidar and camera.
+1. Clone this repo.
+2. Make a build directory: `mkdir build && cd build`
+3. Compile: `cmake .. && make`
+4. Run it: `./ukf_highway`
 
-### **L3: Tracking Image Features**
-- Learn image gradients, filtering, corner detection, feature tracking.
+## Editor Settings
 
-### **L4 Project: 2D Feature Tracking**
-- Build a complete 2D feature-tracking pipeline in OpenCV.
+We've purposefully kept editor configuration files out of this repo in order to
+keep it as simple and environment agnostic as possible. However, we recommend
+using the following settings:
 
----
+* indent using spaces
+* set tab width to 2 spaces (keeps the matrices in source code aligned)
 
-## 4. **Camera + Lidar Sensor Fusion**
+## Code Style
 
-### **L5: Combining Camera and Lidar**
-- Fuse 2D image data with 3D lidar points for improved robustness.
+Please stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html) as much as possible.
 
-### **L6 Project: Track an Object in 3D Space**
-- Build a multi-sensor fusion tracker to estimate TTC and motion in 3D.
+## Generating Additional Data
 
----
+This is optional!
 
-## 5. **Kalman Filters & Real-Time Tracking**
+If you'd like to generate your own radar and lidar modify the code in `highway.h` to alter the cars. Also check out `tools.cpp` to
+change how measurements are taken, for instance lidar markers could be the (x,y) center of bounding boxes by scanning the PCD environment
+and performing clustering. This is similar to what was done in Sensor Fusion Lidar Obstacle Detection.
 
-### **L1: Kalman Filters (Python)**
-- Learn from Sebastian Thrun  
-- Understand prediction & update cycles  
-- Implement a Kalman Filter in Python  
+## Project Instructions and Rubric
 
-### **L2: Lidar & Radar Fusion with Kalman Filters (C++)**
-- Implement a high-performance **Extended Kalman Filter (EKF)** in C++  
-- Fuse radar and lidar measurements for real-time tracking  
-
----
-
-## 6. **Unscented Kalman Filter (UKF)**
-
-### **L3: Unscented Kalman Filters**
-- Overcome EKF limitations with nonlinear motion  
-- Use sigma points & the Unscented Transform  
-- Apply UKF to lidar/radar fusion  
-
-### **L4 Project: UKF Highway Object Tracking**
-- Build a complete UKF tracking pipeline for multiple vehicles on a highway.
-
----
-
-# 📡 7. **1D & 2D CFAR Detection (Radar Filtering)**
-
-### **1D CFAR**
-Includes MATLAB tools for:
-- FMCW radar generation  
-- Range/Doppler detection  
-- Frequency estimation  
-- Maximum range computation  
-
-### **2D CFAR Algorithm Summary**
-1. Select training + guard cells  
-2. Convert training cells from dB → linear  
-3. Exclude guard cells & CUT  
-4. Compute average noise, convert back to dB, add offset  
-5. Compare CUT to threshold  
-6. Mark detections  
-
----
-
-# 🧰 **Technologies & Tools Used**
-- **C++17**, **Python**, **MATLAB**
-- **Point Cloud Library (PCL)**  
-- **OpenCV**  
-- **Udacity Lidar & Radar simulators**  
-- **FMCW Radar models**  
-- **Kalman Filters (KF, EKF, UKF)**  
-- **KD-Tree data structures**  
-
----
-> **Note:** This project uses the official **Udacity Fixed-Wing Simulator** and includes **partial control code** intended for educational and practice purposes.
- 
-
----
+This information is only accessible by people who are already enrolled in Sensor Fusion. 
+If you are enrolled, see the project page in the classroom
+for instructions and the project rubric.
