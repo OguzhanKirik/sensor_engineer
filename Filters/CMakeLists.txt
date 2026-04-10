@@ -43,6 +43,30 @@ add_executable (ckf_highway
 target_link_libraries (ckf_highway ${PCL_LIBRARIES})
 target_compile_definitions(ckf_highway PRIVATE USE_CKF)
 
+# EKF Filter executable (Extended Kalman Filter)
+add_executable (ekf_highway 
+    src/main.cpp 
+    src/filters/ekf/ekf.cpp 
+    src/filters/ukf/ukf.cpp 
+    src/filters/ckf/ckf.cpp
+    src/tools.cpp 
+    src/render/render.cpp
+)
+target_link_libraries (ekf_highway ${PCL_LIBRARIES})
+target_compile_definitions(ekf_highway PRIVATE USE_EKF)
+
+# UKF Filter executable (Unscented Kalman Filter)
+add_executable (ukf_highway 
+    src/main.cpp 
+    src/filters/ukf/ukf.cpp 
+    src/filters/ekf/ekf.cpp 
+    src/filters/ckf/ckf.cpp
+    src/tools.cpp 
+    src/render/render.cpp
+)
+target_link_libraries (ukf_highway ${PCL_LIBRARIES})
+target_compile_definitions(ukf_highway PRIVATE USE_UKF)
+
 # IMM Filter executable with 4 models
 add_executable (imm_highway 
     src/main.cpp 

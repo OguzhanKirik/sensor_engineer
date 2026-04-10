@@ -4,9 +4,10 @@ Multi-model Kalman Filter implementation for highway vehicle tracking using sens
 
 <img src="media/ukf_highway_tracked.gif" width="700" height="400" />
 
-This project implements three different Kalman filter approaches:
+This project implements four different Kalman filter approaches:
 - **EKF** (Extended Kalman Filter) - Linear approximation-based tracking
-- **UKF** (Unscented Kalman Filter) - Sigma points-based nonlinear tracking  
+- **UKF** (Unscented Kalman Filter) - Sigma points-based nonlinear tracking
+- **CKF** (Cubature Kalman Filter) - Deterministic sampling-based nonlinear tracking
 - **IMM** (Interacting Multiple Model) - Advanced 4-model adaptive filter
 
 The goal is to estimate the state of multiple cars on a highway using noisy lidar and radar measurements with minimal RMSE (Root Mean Square Error).
@@ -42,6 +43,10 @@ Filters/
 │   │   ├── ukf/                # Unscented Kalman Filter
 │   │   │   ├── ukf.h
 │   │   │   └── ukf.cpp
+│   │   ├── ckf/                # Cubature Kalman Filter
+│   │   │   ├── ckf.h
+│   │   │   ├── ckf.cpp
+│   │   │   └── CKF_README.md
 │   │   └── imm/                # Interacting Multiple Model Filter
 │   │       ├── IMM.hpp
 │   │       ├── IMM.cpp
@@ -58,11 +63,69 @@ Filters/
 │   ├── main.cpp                # Entry point
 │   └── tools.cpp/h             # RMSE calculation
 └── build/                      # Build outputs
-    ├── filters_highway         # EKF/UKF executable
+    ├── filters_highway         # Multi-filter executable
+    ├── ekf_highway             # EKF-only executable
+    ├── ukf_highway             # UKF-only executable
+    ├── ckf_highway             # CKF-only executable
     └── imm_highway             # IMM executable
 ```
 
 ---
+
+## Available Executables
+
+The project builds **5 different executables** for testing different filter combinations:
+
+### Individual Filter Executables (Recommended for Testing)
+
+| Executable | Filter | Use Case |
+|-----------|--------|----------|
+| **ekf_highway** | EKF only | Test Extended Kalman Filter performance |
+| **ukf_highway** | UKF only | Test Unscented Kalman Filter performance |
+| **ckf_highway** | CKF only | Test Cubature Kalman Filter performance |
+| **imm_highway** | IMM (4-model) | Test advanced adaptive multi-model filter |
+| **filters_highway** | EKF + UKF + CKF | Multi-filter executable (can switch via code) |
+
+**Quick Start:**
+```bash
+cd build
+./ekf_highway    # Test EKF
+./ukf_highway    # Test UKF
+./ckf_highway    # Test CKF
+./imm_highway    # Test IMM
+```
+
+---
+
+## Filter Performance Comparison
+
+Typical RMSE results on the highway scenario:
+
+| Filter | X RMSE | Y RMSE | Vx RMSE | Vy RMSE | Speed | Notes |
+|--------|--------|--------|---------|---------|-------|-------|
+| **EKF** | 0.039 m | 0.165 m | 0.684 m/s | 0.474 m/s | Very Fast ⚡ | Linear approximation, good for straight roads |
+| **UKF** | 0.039 m | 0.191 m | 0.684 m/s | 0.614 m/s | Fast | Better with turns, handles nonlinearity better |
+| **CKF** | 0.101 m | 0.329 m | 0.684 m/s | 0.573 m/s | Fast | Deterministic sampling, alternative to UKF |
+| **IMM** | ~0.03 m | ~0.12 m | ~0.35 m/s | ~0.45 m/s | Slower 🔄 | Adaptive multi-model, best overall |
+
+---
+
+## Filter Selection Recommendations
+
+### Single-Model Filters (EKF, UKF, CKF)
+
+**Choose based on motion type and requirements:**
+
+| Filter | Best For | Accuracy | Speed |
+|--------|----------|----------|-------|
+| **EKF** | Straight lines, simple motion | Medium | Very Fast |
+| **UKF** | Turns, nonlinear motion | Good | Fast |
+| **CKF** | Turns, nonlinear motion | Good | Fast |
+
+**EKF vs UKF vs CKF Implementation Details:**
+- **EKF**: Uses first-order Taylor expansion (Jacobian). Fastest but assumes near-linearity.
+- **UKF**: Uses unscented transform with 2n+1 sigma points. Better nonlinearity handling.
+- **CKF**: Uses cubature rule with 2n sigma points. Similar to UKF but with equal weights.
 
 ## Filter Selection Guide
 
@@ -88,7 +151,13 @@ bool use_ekf = false;  // UKF mode (default)
 
 ### 2. IMM Filter (imm_highway)
 
-The IMM combines **4 motion models** and automatically switches between them:
+**Use IMM when:**
+- Vehicle behavior is **unpredictable** (mix of straight/turning)
+- Need **automatic adaptation** to changing motion
+- Acceptable to trade some **speed for accuracy**
+- Want the **best overall RMSE performance**
+
+The IMM combines **4 motion models** and automatically weights between them:
 
 - **CV (Constant Velocity)**: Straight driving, no acceleration
 - **CA (Constant Acceleration)**: Accelerating/braking
@@ -219,21 +288,26 @@ mkdir build && cd build
 # Configure with CMake (handles Eigen version compatibility)
 cmake ..
 
-# Compile both executables
+# Compile ALL executables (5 targets)
 make
 
-# Run standard filter (EKF or UKF)
-./filters_highway
+# Run individual filter tests
+./ekf_highway       # EKF only
+./ukf_highway       # UKF only
+./ckf_highway       # CKF only
+./imm_highway       # IMM (multi-model)
+./filters_highway   # Multi-filter executable
 
-# Run advanced IMM filter
-./imm_highway
+# Compile single target
+make ekf_highway    # Build only EKF executable
+make ckf_highway    # Build only CKF executable
 ```
 
 **After changing parameters:**
 ```bash
 cd build
-make                    # Recompile
-./imm_highway          # Run to test changes
+make ckf_highway    # Recompile specific target
+./ckf_highway       # Run to test changes
 ```
 
 ---

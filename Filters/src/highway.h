@@ -36,7 +36,13 @@ public:
 
 	Highway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 	{
-		#ifdef USE_CKF
+		#ifdef USE_EKF
+		use_ekf = true;
+		use_ckf = false;
+		#elif defined(USE_UKF)
+		use_ekf = false;
+		use_ckf = false;
+		#elif defined(USE_CKF)
 		use_ckf = true;
 		use_ekf = false;
 		#endif
