@@ -25,16 +25,30 @@ add_executable (filters_highway
     src/main.cpp 
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
+    src/filters/ckf/ckf.cpp
     src/tools.cpp 
     src/render/render.cpp
 )
 target_link_libraries (filters_highway ${PCL_LIBRARIES})
+
+# CKF Filter executable (Cubature Kalman Filter)
+add_executable (ckf_highway 
+    src/main.cpp 
+    src/filters/ckf/ckf.cpp 
+    src/filters/ukf/ukf.cpp 
+    src/filters/ekf/ekf.cpp 
+    src/tools.cpp 
+    src/render/render.cpp
+)
+target_link_libraries (ckf_highway ${PCL_LIBRARIES})
+target_compile_definitions(ckf_highway PRIVATE USE_CKF)
 
 # IMM Filter executable with 4 models
 add_executable (imm_highway 
     src/main.cpp 
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
+    src/filters/ckf/ckf.cpp
     src/motion_models/cv_ekf.cpp
     src/motion_models/ca_ekf.cpp
     src/motion_models/ctrv_ukf.cpp 

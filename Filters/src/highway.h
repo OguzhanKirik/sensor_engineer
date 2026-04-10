@@ -23,6 +23,8 @@ public:
 	std::vector<bool> trackCars = {true,true,true};
 	// Use EKF instead of UKF (false = UKF, true = EKF)
 	bool use_ekf = true;
+	// Use CKF (Cubature Kalman Filter)
+	bool use_ckf = false;
 	// Visualize sensor measurements
 	bool visualize_lidar = true;
 	bool visualize_radar = true;
@@ -34,6 +36,10 @@ public:
 
 	Highway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 	{
+		#ifdef USE_CKF
+		use_ckf = true;
+		use_ekf = false;
+		#endif
 
 		tools = Tools();
 	
@@ -54,7 +60,12 @@ public:
 		car1.setInstructions(car1_instructions);
 		if( trackCars[0] )
 		{
-			if(use_ekf)
+			if(use_ckf)
+			{
+				CKF ckf1;
+				car1.setCKF(ckf1);
+			}
+			else if(use_ekf)
 			{
 				EKF ekf1;
 				car1.setEKF(ekf1);
@@ -76,7 +87,12 @@ public:
 		car2.setInstructions(car2_instructions);
 		if( trackCars[1] )
 		{
-			if(use_ekf)
+			if(use_ckf)
+			{
+				CKF ckf2;
+				car2.setCKF(ckf2);
+			}
+			else if(use_ekf)
 			{
 				EKF ekf2;
 				car2.setEKF(ekf2);
@@ -108,7 +124,12 @@ public:
 	car3.setInstructions(car3_instructions);
 	if( trackCars[2] )
 	{
-		if(use_ekf)
+		if(use_ckf)
+		{
+			CKF ckf3;
+			car3.setCKF(ckf3);
+		}
+		else if(use_ekf)
 		{
 			EKF ekf3;
 			car3.setEKF(ekf3);
@@ -160,10 +181,12 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 				tools.radarSense(traffic[i], egoCar, viewer, timestamp, visualize_radar);
 				tools.ukfResults(traffic[i],viewer, projectedTime, projectedSteps);
 				VectorXd estimate(4);
-			// Get state from active filter (EKF or UKF)
+			// Get state from active filter (EKF, UKF, or CKF)
 			VectorXd x_state;
 			if(traffic[i].use_ekf) {
 				x_state = traffic[i].ekf.x_;
+			} else if(traffic[i].use_ckf) {
+				x_state = traffic[i].ckf.x_;
 			} else {
 				x_state = traffic[i].ukf.x_;
 			}

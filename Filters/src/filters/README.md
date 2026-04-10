@@ -1,6 +1,6 @@
 # Filters Directory
 
-This directory contains three different Kalman filter implementations for object tracking.
+This directory contains four different Kalman filter implementations for object tracking.
 
 ## Directory Structure
 
@@ -12,8 +12,12 @@ filters/
 ├── ukf/                    - Unscented Kalman Filter
 │   ├── ukf.h
 │   └── ukf.cpp
+├── ckf/                    - Cubature Kalman Filter
+│   ├── ckf.h
+│   ├── ckf.cpp
+│   └── CKF_README.md
 └── imm/                    - Interacting Multiple Model Filter
-    ├── IMM.hpp
+   ├── IMM.hpp
     ├── IMM.cpp
     └── IMM_README.md
 ```
@@ -44,7 +48,21 @@ filters/
 
 **Use Case**: Standard choice for most tracking applications with radar/lidar fusion.
 
-### 3. IMM (Interacting Multiple Model Filter)
+### 3. CKF (Cubature Kalman Filter)
+**Location**: `ckf/`
+
+- **Type**: Spherical-radial cubature-based filter
+- **State**: [px, py, v, yaw, yaw_rate]
+- **Motion Model**: CTRV (Constant Turn Rate and Velocity)
+- **Best For**: Nonlinear systems **without tuning parameters**
+- **Complexity**: Medium
+- **Performance**: Similar to UKF, parameter-free
+
+**Use Case**: When you want UKF-level accuracy without the hassle of tuning α, β, κ parameters.
+
+See [ckf/CKF_README.md](ckf/CKF_README.md) for detailed CKF documentation.
+
+### 4. IMM (Interacting Multiple Model Filter)
 **Location**: `imm/`
 
 - **Type**: Multi-model adaptive filter
@@ -60,11 +78,12 @@ See [imm/IMM_README.md](imm/IMM_README.md) for detailed IMM documentation.
 
 ## Performance Comparison
 
-| Filter | RMSE | Computation | Scenarios | Adaptability |
-|--------|------|-------------|-----------|--------------|
-| **EKF** | Higher | Lowest | Simple | None |
-| **UKF** | Medium | Medium | Standard | None |
-| **IMM** | Lowest | Highest | Complex | Automatic |
+| Filter | RMSE | Computation | Scenarios | Adaptability | Tuning Needed |
+|--------|------|-------------|-----------|--------------|---------------|
+| **EKF** | Higher | Lowest | Simple | None | Low |
+| **UKF** | Medium | Medium | Standard | None | Medium (α,β,κ) |
+| **CKF** | Medium | Medium | Standard | None | **None** |
+| **IMM** | Lowest | Highest | Complex | Automatic | High |
 
 ## Usage in Code
 
@@ -75,18 +94,29 @@ The filter choice is controlled in `highway.h`:
 ```cpp
 // Use EKF instead of UKF (false = UKF, true = EKF)
 bool use_ekf = true;  // Set to false for UKF
+
+// Use CKF (Cubature Kalman Filter)
+bool use_ckf = false; // Set to true for CKF
+```
+
+**Note**: `use_ckf` takes precedence over `use_ekf` when both are set.
 ```
 
 ### Building
 
 ```bash
-# Build EKF/UKF version
+# Build all versions
 cd build
 cmake ..
 make
+
+# Run standard filter (EKF/UKF - controlled by use_ekf flag in highway.h)
 ./filters_highway
 
-# Build IMM version
+# Run Cubature Kalman Filter
+./ckf_highway
+
+# Run IMM (4-model adaptive filter)
 ./imm_highway
 ```
 
@@ -101,7 +131,14 @@ make
 - ✅ Standard tracking with good accuracy is needed
 - ✅ Dealing with nonlinear sensor models (radar)
 - ✅ Computational resources are moderate
-- ✅ This is the default choice for most applications
+- ✅ You can tune parameters (α, β, κ) for optimal performance
+
+### Use CKF when:
+- ✅ You want UKF-level accuracy **without tuning parameters**
+- ✅ Dealing with nonlinear systems (same as UKF)
+- ✅ Prefer mathematical rigor (spherical-radial cubature theory)
+- ✅ Simpler setup than UKF (no α, β, κ to tune)
+- ✅ This is the best choice for "set it and forget it" nonlinear tracking
 
 ### Use IMM when:
 - ✅ Maximum tracking accuracy is required

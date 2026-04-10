@@ -11,6 +11,7 @@
 #include <string>
 #include "../filters/ukf/ukf.h"
 #include "../filters/ekf/ekf.hpp"
+#include "../filters/ckf/ckf.h"
 
 struct Color
 {
@@ -71,7 +72,9 @@ struct Car
 
 	UKF ukf;
 	EKF ekf;
+	CKF ckf;
 	bool use_ekf;
+	bool use_ckf;
 
 	//accuation instructions
 	std::vector<accuation> instructions;
@@ -92,6 +95,7 @@ struct Car
 		steering = 0;
 		accuateIndex = -1;
 		use_ekf = false;
+		use_ckf = false;
 
 		sinNegTheta = sin(-angle);
 		cosNegTheta = cos(-angle);
@@ -150,12 +154,21 @@ struct Car
 	{
 		ukf = tracker;
 		use_ekf = false;
+		use_ckf = false;
 	}
 
 	void setEKF(EKF tracker)
 	{
 		ekf = tracker;
 		use_ekf = true;
+		use_ckf = false;
+	}
+
+	void setCKF(CKF tracker)
+	{
+		ckf = tracker;
+		use_ekf = false;
+		use_ckf = true;
 	}
 
 	void move(float dt, int time_us)

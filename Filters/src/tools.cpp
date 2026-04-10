@@ -32,6 +32,8 @@ lmarker Tools::lidarSense(Car& car, pcl::visualization::PCLVisualizer::Ptr& view
 
     if(car.use_ekf)
         car.ekf.ProcessMeasurument(meas_package);
+    else if(car.use_ckf)
+        car.ckf.ProcessMeasurement(meas_package);
     else
         car.ukf.ProcessMeasurement(meas_package);
 
@@ -60,6 +62,8 @@ rmarker Tools::radarSense(Car& car, Car ego, pcl::visualization::PCLVisualizer::
 
     if(car.use_ekf)
         car.ekf.ProcessMeasurument(meas_package);
+    else if(car.use_ckf)
+        car.ckf.ProcessMeasurement(meas_package);
     else
         car.ukf.ProcessMeasurement(meas_package);
 
@@ -74,6 +78,8 @@ void Tools::ukfResults(Car car, pcl::visualization::PCLVisualizer::Ptr& viewer, 
 	VectorXd x_;
 	if(car.use_ekf) {
 		x_ = car.ekf.x_;
+	} else if(car.use_ckf) {
+		x_ = car.ckf.x_;
 	} else {
 		x_ = car.ukf.x_;
 	}
@@ -84,8 +90,11 @@ void Tools::ukfResults(Car car, pcl::visualization::PCLVisualizer::Ptr& viewer, 
 		// Create a copy of the filter for prediction
 		UKF ukf_pred;
 		EKF ekf_pred;
+		CKF ckf_pred;
 		if(car.use_ekf) {
 			ekf_pred = car.ekf;
+		} else if(car.use_ckf) {
+			ckf_pred = car.ckf;
 		} else {
 			ukf_pred = car.ukf;
 		}
@@ -98,6 +107,9 @@ void Tools::ukfResults(Car car, pcl::visualization::PCLVisualizer::Ptr& viewer, 
 			if(car.use_ekf) {
 				ekf_pred.Prediction(dt);
 				pred_x = ekf_pred.x_;
+			} else if(car.use_ckf) {
+				ckf_pred.Predict(dt);
+				pred_x = ckf_pred.x_;
 			} else {
 				ukf_pred.Prediction(dt);
 				pred_x = ukf_pred.x_;
