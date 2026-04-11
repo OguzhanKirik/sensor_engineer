@@ -1,2 +1,0 @@
-set(__QT_DEPLOY_TARGET_filters_highway_FILE /Users/oguz/Desktop/workspace_cpp/SFND_Unscented_Kalman_Filter/build/filters_highway)
-set(__QT_DEPLOY_TARGET_filters_highway_TYPE EXECUTABLE)
