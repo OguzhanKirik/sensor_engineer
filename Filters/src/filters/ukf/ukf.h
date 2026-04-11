@@ -5,6 +5,7 @@
 #include "measurement_package.h"
 #include <vector>
 
+// Forward-pass snapshot needed by the UKF-based RTS and fixed-lag smoothers.
 struct UKFRTSStepData {
   long long timestamp = 0;
   bool is_initialization = false;
@@ -55,7 +56,7 @@ class UKF {
   // Clear cached forward-pass history used by offline smoothers.
   void ClearStepHistory();
 
-  // Access cached forward-pass history for RTS smoothing.
+  // Access cached forward-pass history for RTS and fixed-lag smoothing.
   const std::vector<UKFRTSStepData>& GetStepHistory() const;
 
 
@@ -74,7 +75,7 @@ class UKF {
   // state covariance matrix
   Eigen::MatrixXd P_;
 
-  // predicted sigma points matrix
+  // Predicted sigma points after the nonlinear process propagation.
   Eigen::MatrixXd Xsig_pred_;
 
   // time when the state is true, in us
@@ -101,7 +102,7 @@ class UKF {
   // Radar measurement noise standard deviation radius change in m/s
   double std_radrd_ ;
 
-  // Weights of sigma points
+  // Unscented transform weights for mean and covariance recovery.
   Eigen::VectorXd weights_;
 
   // State dimension
@@ -116,6 +117,7 @@ class UKF {
  private:
   void NormalizeAngle(double& angle);
 
+  // Cached prediction terms consumed by backward smoothers.
   Eigen::VectorXd last_x_pred_;
   Eigen::MatrixXd last_P_pred_;
   Eigen::MatrixXd last_P_cross_;

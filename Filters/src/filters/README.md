@@ -1,6 +1,6 @@
 # Filters Directory
 
-This directory contains multiple Kalman filter implementations for object tracking, plus an offline RTS smoother built on top of the EKF forward pass.
+This directory contains multiple state-estimation filters and smoothers for object tracking, along with method-specific documentation in each subdirectory.
 
 ## Directory Structure
 
@@ -8,30 +8,44 @@ This directory contains multiple Kalman filter implementations for object tracki
 filters/
 ├── ekf/                    - Extended Kalman Filter
 │   ├── ekf.hpp
-│   └── ekf.cpp
+│   ├── ekf.cpp
+│   └── README.md
 ├── iekf/                   - Iterated Extended Kalman Filter
 │   ├── iekf.hpp
-│   └── iekf.cpp
+│   ├── iekf.cpp
+│   └── README.md
 ├── ukf/                    - Unscented Kalman Filter
 │   ├── ukf.h
-│   └── ukf.cpp
+│   ├── ukf.cpp
+│   └── README.md
 ├── ckf/                    - Cubature Kalman Filter
 │   ├── ckf.h
 │   ├── ckf.cpp
-│   └── CKF_README.md
+│   └── README.md
 ├── pf/                     - Particle Filter
 │   ├── pf.h
-│   └── pf.cpp
+│   ├── pf.cpp
+│   └── README.md
 ├── mhe/                    - Moving Horizon Estimation scaffold
 │   ├── mhe.h
-│   └── mhe.cpp
-├── rts/                    - Rauch-Tung-Striebel smoother
+│   ├── mhe.cpp
+│   └── README.md
+├── rts/                    - Rauch-Tung-Striebel smoothers
 │   ├── ekf_rts_smoother.h
-│   └── ekf_rts_smoother.cpp
+│   ├── ekf_rts_smoother.cpp
+│   ├── ukf_rts_smoother.h
+│   ├── ukf_rts_smoother.cpp
+│   └── README.md
+├── lag_smoother/           - Fixed-lag smoothers
+│   ├── ekf_fixed_lag_smoother.h
+│   ├── ekf_fixed_lag_smoother.cpp
+│   ├── ukf_fixed_lag_smoother.h
+│   ├── ukf_fixed_lag_smoother.cpp
+│   └── README.md
 └── imm/                    - Interacting Multiple Model Filter
-   ├── IMM.hpp
+    ├── IMM.hpp
     ├── IMM.cpp
-    └── IMM_README.md
+    └── README.md
 ```
 
 ## Filter Types
@@ -86,9 +100,9 @@ filters/
 
 **Use Case**: When you want UKF-level accuracy without the hassle of tuning α, β, κ parameters.
 
-See [ckf/CKF_README.md](ckf/CKF_README.md) for detailed CKF documentation.
+See [ckf/README.md](ckf/README.md) for detailed CKF documentation.
 
-### 5. EKF + RTS Smoother
+### 5. RTS Smoothers
 **Location**: `rts/`
 
 - **Type**: Two-pass smoother on top of EKF
@@ -99,7 +113,18 @@ See [ckf/CKF_README.md](ckf/CKF_README.md) for detailed CKF documentation.
 
 **Important**: RTS is not a real-time causal estimator. It runs EKF forward first, then performs a backward correction pass using future measurements to refine earlier states.
 
-### 6. MHE (Moving Horizon Estimation)
+### 6. Fixed-Lag Smoothers
+**Location**: `lag_smoother/`
+
+- **Type**: Bounded-window backward smoothers
+- **Forward Model**: EKF or UKF
+- **Best For**: Near-online smoothing with finite delay
+- **Complexity**: Medium
+- **Performance**: Usually between the forward filter and full RTS
+
+**Important**: Fixed-lag smoothing still uses future information, but only within a limited horizon.
+
+### 7. MHE (Moving Horizon Estimation)
 **Location**: `mhe/`
 
 - **Type**: Sliding-window optimization-based estimator
@@ -110,7 +135,7 @@ See [ckf/CKF_README.md](ckf/CKF_README.md) for detailed CKF documentation.
 
 **Current Status**: The class is created as a scaffold. It maintains a moving window, arrival-cost placeholders, and an EKF warm-start path, but it does not yet solve the nonlinear MHE optimization problem.
 
-### 7. IMM (Interacting Multiple Model Filter)
+### 8. IMM (Interacting Multiple Model Filter)
 **Location**: `imm/`
 
 - **Type**: Multi-model adaptive filter
@@ -122,7 +147,7 @@ See [ckf/CKF_README.md](ckf/CKF_README.md) for detailed CKF documentation.
 
 **Use Case**: When maximum accuracy is needed and computational resources allow. Automatically adapts to different driving behaviors.
 
-See [imm/IMM_README.md](imm/IMM_README.md) for detailed IMM documentation.
+See [imm/README.md](imm/README.md) for detailed IMM documentation.
 
 ## Performance Comparison
 
@@ -130,6 +155,7 @@ See [imm/IMM_README.md](imm/IMM_README.md) for detailed IMM documentation.
 |--------|------|-------------|-----------|--------------|---------------|
 | **EKF** | Higher | Lowest | Simple | None | Low |
 | **EKF + RTS** | Lower than EKF | Low forward + offline backward pass | Offline evaluation | None | Low |
+| **Fixed-lag** | Between forward filter and RTS | Moderate | Delayed online smoothing | None | Low |
 | **MHE** | Placeholder until solver is added | Moderate | Sliding-window estimation | Constraints possible | High |
 | **IEKF** | Medium | Low | Simple-Medium | None | Low |
 | **UKF** | Medium | Medium | Standard | None | Medium (α,β,κ) |
@@ -149,6 +175,9 @@ bool use_ekf = true;  // Set to false for UKF
 // Run offline RTS smoothing after the EKF simulation ends
 bool use_ekf_rts = false; // Enabled by ekf_rts_highway
 
+// Run fixed-lag smoothing after the EKF simulation ends
+bool use_ekf_fixed_lag = false; // Enabled by ekf_fixed_lag_highway
+
 // Use MHE (Moving Horizon Estimation scaffold)
 bool use_mhe = false; // Enabled by mhe_highway
 
@@ -159,7 +188,7 @@ bool use_iekf = false; // Set to true for IEKF
 bool use_ckf = false; // Set to true for CKF
 ```
 
-**Note**: RTS smoothing is only enabled in the dedicated `ekf_rts_highway` executable. It is an offline backward pass after the forward EKF run completes.
+**Note**: RTS and fixed-lag smoothing are enabled in dedicated executables and run as post-processing passes after the forward filter finishes.
 
 ### Building
 
@@ -178,6 +207,9 @@ make
 # Run EKF + RTS smoother
 ./ekf_rts_highway
 
+# Run EKF fixed-lag smoother
+./ekf_fixed_lag_highway
+
 # Run MHE scaffold
 ./mhe_highway
 
@@ -186,6 +218,12 @@ make
 
 # Run Unscented Kalman Filter
 ./ukf_highway
+
+# Run UKF + RTS smoother
+./ukf_rts_highway
+
+# Run UKF fixed-lag smoother
+./ukf_fixed_lag_highway
 
 # Run Cubature Kalman Filter
 ./ckf_highway
@@ -209,6 +247,12 @@ make
 - ✅ You want backward correction of earlier EKF estimates
 - ✅ You care about post-run trajectory quality and RMSE
 - ✅ Real-time output is not required
+
+### Use fixed-lag smoothing when:
+- ✅ You want smoother trajectories with bounded delay
+- ✅ Full offline RTS is too delayed for the intended workflow
+- ✅ You want a practical bridge between pure filtering and full smoothing
+- ✅ Some latency is acceptable
 
 ### Use MHE when:
 - ✅ You want the codebase scaffold for future constrained estimation work
@@ -255,6 +299,7 @@ Each filter directory contains:
 - Header file (.h or .hpp)
 - Implementation file (.cpp)
 - Filter-specific logic and parameters
+- A local `README.md` with theory and implementation notes
 
 ## Related Directories
 

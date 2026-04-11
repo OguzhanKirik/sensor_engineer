@@ -1,13 +1,13 @@
-#include "filters/lag_smoother/ukf_fixed_lag_smoother.h"
+#include "filters/lag_smoother/ekf_fixed_lag_smoother.h"
 
 #include <algorithm>
 
-// Fixed-lag variant of the UKF smoother. It uses the same unscented
-// cross-covariance terms as full RTS, but truncates the backward window.
+// Fixed-lag variant of the EKF RTS smoother. Each state is corrected with only
+// a bounded amount of future information.
 
-std::vector<UKFRTSStateEstimate> UKFFixedLagSmoother::SmoothFromHistory(
-    const std::vector<UKFRTSStepData>& history, int lag_steps) const {
-  std::vector<UKFRTSStateEstimate> output;
+std::vector<RTSStateEstimate> EKFFixedLagSmoother::SmoothFromHistory(
+    const std::vector<EKFRTSStepData>& history, int lag_steps) const {
+  std::vector<RTSStateEstimate> output;
   if (history.empty()) {
     return output;
   }
@@ -22,7 +22,7 @@ std::vector<UKFRTSStateEstimate> UKFFixedLagSmoother::SmoothFromHistory(
 
     // Recreate a local filtered trajectory and only run the backward pass
     // inside the chosen lag window.
-    std::vector<UKFRTSStateEstimate> local(end + 1);
+    std::vector<RTSStateEstimate> local(end + 1);
     for (int i = 0; i <= end; ++i) {
       local[i].timestamp = history[i].timestamp;
       local[i].x = history[i].x_filtered;
@@ -34,21 +34,21 @@ std::vector<UKFRTSStateEstimate> UKFFixedLagSmoother::SmoothFromHistory(
         continue;
       }
 
-      const Eigen::MatrixXd& P_cross = history[k + 1].P_cross;
-      const Eigen::MatrixXd& P_predicted = history[k + 1].P_predicted;
-      Eigen::MatrixXd smoother_gain = P_cross * P_predicted.inverse();
+      const MatrixXd& P_filtered = history[k].P_filtered;
+      const MatrixXd& F_jacobian = history[k + 1].F_jacobian;
+      const MatrixXd& P_predicted = history[k + 1].P_predicted;
+      MatrixXd smoother_gain =
+          P_filtered * F_jacobian.transpose() * P_predicted.inverse();
 
-      Eigen::VectorXd state_residual =
-          local[k + 1].x - history[k + 1].x_predicted;
+      VectorXd state_residual = local[k + 1].x - history[k + 1].x_predicted;
       NormalizeAngle(state_residual(3));
 
       local[k].x = history[k].x_filtered + smoother_gain * state_residual;
       NormalizeAngle(local[k].x(3));
 
-      local[k].P =
-          history[k].P_filtered +
-          smoother_gain * (local[k + 1].P - P_predicted) *
-              smoother_gain.transpose();
+      local[k].P = history[k].P_filtered +
+                   smoother_gain * (local[k + 1].P - P_predicted) *
+                       smoother_gain.transpose();
     }
 
     output[target] = local[target];
@@ -57,7 +57,7 @@ std::vector<UKFRTSStateEstimate> UKFFixedLagSmoother::SmoothFromHistory(
   return output;
 }
 
-void UKFFixedLagSmoother::NormalizeAngle(double& angle) const {
+void EKFFixedLagSmoother::NormalizeAngle(double& angle) const {
   while (angle > M_PI) angle -= 2.0 * M_PI;
   while (angle < -M_PI) angle += 2.0 * M_PI;
 }

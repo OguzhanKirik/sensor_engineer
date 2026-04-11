@@ -82,7 +82,7 @@ public:
     // Radar measurement noise standard deviation radius change in m/s
     double std_radrd_;
 
-    // Weights for cubature points (all equal for CKF)
+    // Weights for cubature points. CKF uses equal weights by construction.
     VectorXd weights_;
 
     // State dimension
@@ -94,7 +94,7 @@ public:
     // Number of cubature points (2 * n_x for CKF)
     int n_sigma_;
 
-    // Predicted cubature points matrix
+    // Predicted cubature points after process-model propagation.
     MatrixXd Xsig_pred_;
 
     // Time when the state is true, in us

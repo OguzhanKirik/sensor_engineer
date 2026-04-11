@@ -8,6 +8,7 @@
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 
+// Forward-pass snapshot needed by the EKF-based RTS and fixed-lag smoothers.
 struct EKFRTSStepData {
     long long timestamp = 0;
     bool is_initialization = false;
@@ -32,7 +33,7 @@ class EKF{
         // Predict state and covariance forward in time using CTRV motion model
         void Prediction(double delta_t);
 
-        // State vector: [px, py, v, yaw, yaw_rate]
+        // State vector: [px, py, v, yaw, yaw_rate] under a CTRV motion model.
         VectorXd x_;
         
         // State covariance matrix
@@ -109,7 +110,8 @@ class EKF{
         // Radar measurement noise standard deviation radius change in m/s
         double std_radrd_ ;
 
-        // Last prediction snapshot used to populate smoother history.
+        // Last one-step prediction cached so backward smoothers can reconstruct
+        // the RTS gain without rerunning the forward pass.
         VectorXd last_x_pred_;
         MatrixXd last_P_pred_;
         MatrixXd last_F_jacobian_;

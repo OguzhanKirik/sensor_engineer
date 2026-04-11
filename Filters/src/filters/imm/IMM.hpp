@@ -26,7 +26,7 @@ public:
     IMM();
     virtual ~IMM();
     
-    // Main processing function
+    // Main IMM cycle: mix, predict, update, reweight models, fuse result.
     void ProcessMeasurement(const MeasurementPackage& meas_package);
     
     // Get fused state and covariance

@@ -13,9 +13,14 @@ class PF {
   PF();
   virtual ~PF();
 
+  // Entry point that performs initialization, prediction, measurement update,
+  // optional resampling, and weighted state extraction.
   void ProcessMeasurement(const MeasurementPackage& meas_package);
+
+  // Propagate each particle with the CTRV process model and injected noise.
   void Prediction(double delta_t);
 
+  // Weighted particle mean exposed to the rest of the highway harness.
   Eigen::VectorXd x_;
 
  private:
@@ -24,11 +29,22 @@ class PF {
     double w;
   };
 
+  // Reweight particles using the lidar likelihood p(z_k | x_k^i).
   void UpdateLidar(const MeasurementPackage& meas_package);
+
+  // Reweight particles using the radar likelihood p(z_k | x_k^i).
   void UpdateRadar(const MeasurementPackage& meas_package);
+
+  // Enforce a valid discrete probability distribution over particle weights.
   void NormalizeWeights();
+
+  // Quantifies particle degeneracy to decide when to resample.
   double EffectiveSampleSize() const;
+
+  // Low-variance resampling used when weight collapse is detected.
   void ResampleSystematic();
+
+  // Recover the output state from the weighted particle cloud.
   void ComputeStateMean();
 
   static double NormalizeAngle(double angle);

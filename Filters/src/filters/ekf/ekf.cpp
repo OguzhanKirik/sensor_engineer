@@ -1,5 +1,7 @@
 #include"ekf.hpp"
 
+// EKF forward pass for the 5D CTRV highway tracking model.
+
 EKF::EKF(){
     // ==========================================
     // Initialize Process Noise Parameters
@@ -75,6 +77,7 @@ EKF::EKF(){
 EKF::~EKF() {}
 
 void EKF::ClearStepHistory() {
+    // Smoothers replay a fresh log and then consume this cache offline.
     step_history_.clear();
 }
 
@@ -209,6 +212,8 @@ void EKF::ProcessMeasurument(MeasurementPackage meas_package){
         UpdateRadar(meas_package);  // Nonlinear update using radar measurement
     }
 
+    // Persist the posterior and local linearization terms needed by the
+    // backward EKF smoothers.
     EKFRTSStepData step;
     step.timestamp = meas_package.timestamp_;
     step.is_initialization = false;
@@ -253,7 +258,8 @@ void EKF::Prediction(double dt) {
   NormalizeAngle(x_(3));
   last_x_pred_ = x_;
 
-  // 2) Build process Jacobian Fj = df/dx
+  // 2) Build the local process linearization used by both the EKF covariance
+  // update and the backward RTS/fixed-lag smoothers.
   MatrixXd Fj = MatrixXd::Identity(5, 5);
 
   if (fabs(yawd) > eps) {
@@ -282,8 +288,7 @@ void EKF::Prediction(double dt) {
     Fj(3, 4) = dt;
   }
 
-  // 3) Build process noise covariance Q
-  //    using std_a_ and std_yawdd_
+  // 3) Map longitudinal and yaw acceleration noise into state space.
   MatrixXd G = MatrixXd::Zero(5, 2);
 
   G(0, 0) = 0.5 * dt * dt * cos(yaw);
@@ -299,7 +304,7 @@ void EKF::Prediction(double dt) {
 
   Q_ = G * Qv * G.transpose();
 
-  //4) Predict covariance
+  // 4) Standard EKF covariance propagation.
   P_ = Fj * P_ * Fj.transpose() + Q_;
   last_P_pred_ = P_;
   last_F_jacobian_ = Fj;

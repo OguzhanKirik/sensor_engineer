@@ -6,6 +6,8 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+// UKF forward pass for the 5D CTRV highway tracking problem.
+
 /**
  * Initializes Unscented Kalman filter
  */
@@ -165,6 +167,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       UpdateRadar(meas_package );
   }
 
+  // Cache the posterior, prediction, and cross-covariance needed by the
+  // backward smoothers.
   UKFRTSStepData step;
   step.timestamp = meas_package.timestamp_;
   step.is_initialization = false;
@@ -189,10 +193,12 @@ void UKF::Prediction(double delta_t) {
   assert(weights_.size() == 2 * n_aug_ + 1);
   assert(lambda_ + n_aug_ > 0.0);
 
+  // Preserve x_{k|k} and P_{k|k}; the smoother cross-covariance couples these
+  // terms to the one-step prediction at k+1.
   const VectorXd x_filtered_before = x_;
   const MatrixXd P_filtered_before = P_;
 
-   //Build augmented state with sensor noise
+  // Build the augmented Gaussian that explicitly carries process noise terms.
   VectorXd x_aug = VectorXd(7);
   x_aug.head(5) = x_;
   x_aug(5) = 0;
@@ -222,7 +228,7 @@ void UKF::Prediction(double delta_t) {
   assert(Xsig_pred_.allFinite());
   
   
-  //Predict sigma points
+  // Propagate each sigma point through the nonlinear CTRV process model.
   for (int i = 0; i< 2*n_aug_+1; i++)
   {
     //extract values for better readability 
@@ -283,7 +289,7 @@ void UKF::Prediction(double delta_t) {
   assert(std::isfinite(weights_.sum()));
   assert(fabs(weights_.sum() - 1.0) < 1e-6);
 
-  // Predict Mean and Covariance
+  // Recover the predicted mean and covariance from the propagated sigma set.
   x_.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {
     x_ += weights_(i) * Xsig_pred_.col(i);
@@ -313,6 +319,7 @@ void UKF::Prediction(double delta_t) {
   last_x_pred_ = x_;
   last_P_pred_ = P_;
 
+  // Cross-covariance needed by the unscented RTS and fixed-lag smoothers.
   MatrixXd Xsig_state = Xsig_aug.topRows(n_x_);
   last_P_cross_ = MatrixXd::Zero(n_x_, n_x_);
   for (int i = 0; i < 2 * n_aug_ + 1; ++i) {

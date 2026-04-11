@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cmath>
 
+// CKF implementation for the 5D CTRV highway tracking problem.
+
 CKF::CKF() {
     // State dimension
     n_x_ = 5;
@@ -181,6 +183,8 @@ void CKF::PredictCubaturePoints(const MatrixXd& Xsig, double delta_t) {
 }
 
 void CKF::Predict(double delta_t) {
+    // CKF mirrors the UKF prediction flow, but uses equal-weight cubature
+    // points instead of unscented sigma points.
     // Step 1: Generate cubature points
     MatrixXd Xsig = GenerateCubaturePoints(x_, P_);
     
@@ -226,6 +230,8 @@ void CKF::Predict(double delta_t) {
 }
 
 void CKF::UpdateLidar(const MeasurementPackage& meas_package) {
+    // The lidar model is linear, but we keep the same cubature machinery so
+    // the radar and lidar code paths stay structurally similar.
     // Lidar measurement dimension (px, py)
     int n_z = 2;
     
@@ -287,6 +293,8 @@ void CKF::UpdateLidar(const MeasurementPackage& meas_package) {
 }
 
 void CKF::UpdateRadar(const MeasurementPackage& meas_package) {
+    // Radar stays fully nonlinear; cubature points approximate the predicted
+    // measurement distribution without an explicit Jacobian.
     // Radar measurement dimension (rho, phi, rho_dot)
     int n_z = 3;
     

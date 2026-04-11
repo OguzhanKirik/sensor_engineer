@@ -15,6 +15,7 @@ using Eigen::VectorXd;
 struct MHENode {
   long long timestamp = 0;
   MeasurementPackage measurement;
+  // Warm-start state/covariance taken from the embedded EKF scaffold.
   VectorXd x_warm_start;
   MatrixXd P_warm_start;
 };
@@ -53,6 +54,7 @@ class MHE {
   bool is_initialized_;
 
  private:
+  // Enforce the configured fixed horizon length.
   void TrimWindow();
 
   size_t window_size_;

@@ -5,6 +5,7 @@
 #include "sensors/lidar.h"
 #include "tools.h"
 #include "filters/iekf/iekf.hpp"
+#include "filters/lag_smoother/ekf_fixed_lag_smoother.h"
 #include "filters/rts/ekf_rts_smoother.h"
 #include "filters/lag_smoother/ukf_fixed_lag_smoother.h"
 #include "filters/rts/ukf_rts_smoother.h"
@@ -29,6 +30,8 @@ public:
 	bool use_ekf = true;
 	// Run offline RTS smoothing on top of EKF after the simulation ends
 	bool use_ekf_rts = false;
+	// Run fixed-lag smoothing on top of EKF after the simulation ends
+	bool use_ekf_fixed_lag = false;
 	// Run offline RTS smoothing on top of UKF after the simulation ends
 	bool use_ukf_rts = false;
 	// Run fixed-lag smoothing on top of UKF after the simulation ends
@@ -50,6 +53,7 @@ public:
 	int projectedSteps = 0;
 	int fixed_lag_steps = 30;
 	bool rts_reported = false;
+	EKFFixedLagSmoother ekf_fixed_lag_smoother;
 	EKFRTSSmoother ekf_rts_smoother;
 	UKFFixedLagSmoother ukf_fixed_lag_smoother;
 	UKFRTSSmoother ukf_rts_smoother;
@@ -61,6 +65,7 @@ public:
 		#ifdef USE_EKF
 		use_ekf = true;
 		use_ekf_rts = false;
+		use_ekf_fixed_lag = false;
 		use_ukf_rts = false;
 		use_ukf_fixed_lag = false;
 		use_iekf = false;
@@ -70,6 +75,17 @@ public:
 		#elif defined(USE_EKF_RTS)
 		use_ekf = true;
 		use_ekf_rts = true;
+		use_ekf_fixed_lag = false;
+		use_ukf_rts = false;
+		use_ukf_fixed_lag = false;
+		use_iekf = false;
+		use_ckf = false;
+		use_pf = false;
+		use_mhe = false;
+		#elif defined(USE_EKF_FIXED_LAG)
+		use_ekf = true;
+		use_ekf_rts = false;
+		use_ekf_fixed_lag = true;
 		use_ukf_rts = false;
 		use_ukf_fixed_lag = false;
 		use_iekf = false;
@@ -79,6 +95,7 @@ public:
 		#elif defined(USE_UKF_RTS)
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ekf_fixed_lag = false;
 		use_ukf_rts = true;
 		use_ukf_fixed_lag = false;
 		use_iekf = false;
@@ -88,6 +105,7 @@ public:
 		#elif defined(USE_UKF_FIXED_LAG)
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ekf_fixed_lag = false;
 		use_ukf_rts = false;
 		use_ukf_fixed_lag = true;
 		use_iekf = false;
@@ -97,6 +115,7 @@ public:
 		#elif defined(USE_IEKF)
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ekf_fixed_lag = false;
 		use_ukf_rts = false;
 		use_ukf_fixed_lag = false;
 		use_iekf = true;
@@ -106,6 +125,7 @@ public:
 		#elif defined(USE_MHE)
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ekf_fixed_lag = false;
 		use_ukf_rts = false;
 		use_ukf_fixed_lag = false;
 		use_iekf = false;
@@ -115,6 +135,7 @@ public:
 		#elif defined(USE_UKF)
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ekf_fixed_lag = false;
 		use_ukf_rts = false;
 		use_ukf_fixed_lag = false;
 		use_iekf = false;
@@ -125,6 +146,7 @@ public:
 		use_ckf = true;
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ekf_fixed_lag = false;
 		use_ukf_rts = false;
 		use_ukf_fixed_lag = false;
 		use_iekf = false;
@@ -134,6 +156,7 @@ public:
 		use_pf = true;
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ekf_fixed_lag = false;
 		use_ukf_rts = false;
 		use_ukf_fixed_lag = false;
 		use_iekf = false;
@@ -408,13 +431,13 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 
 	void reportRTSResults()
 	{
-		if ((!use_ekf_rts && !use_ukf_rts && !use_ukf_fixed_lag) || rts_reported)
+		if ((!use_ekf_rts && !use_ekf_fixed_lag && !use_ukf_rts && !use_ukf_fixed_lag) || rts_reported)
 		{
 			return;
 		}
 
 		rts_reported = true;
-		if (use_ukf_fixed_lag) {
+		if (use_ekf_fixed_lag || use_ukf_fixed_lag) {
 			std::cout << "\nFixed-lag smoothing summary" << std::endl;
 		} else {
 			std::cout << "\nRTS smoothing summary" << std::endl;
@@ -430,7 +453,7 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 			std::vector<VectorXd> filtered_estimations;
 			std::vector<VectorXd> smoothed_estimations;
 
-			if (use_ekf_rts) {
+			if (use_ekf_rts || use_ekf_fixed_lag) {
 				if (!traffic[i].use_ekf) {
 					continue;
 				}
@@ -450,7 +473,13 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 					filtered_estimations.push_back(estimate);
 				}
 
-				auto smoothed_states = ekf_rts_smoother.SmoothFromHistory(history);
+				std::vector<RTSStateEstimate> smoothed_states;
+				if (use_ekf_fixed_lag) {
+					smoothed_states =
+						ekf_fixed_lag_smoother.SmoothFromHistory(history, fixed_lag_steps);
+				} else {
+					smoothed_states = ekf_rts_smoother.SmoothFromHistory(history);
+				}
 				smoothed_estimations.reserve(smoothed_states.size());
 				for (const auto& state : smoothed_states) {
 					VectorXd estimate(4);

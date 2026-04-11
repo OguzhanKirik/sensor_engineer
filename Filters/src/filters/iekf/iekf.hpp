@@ -23,7 +23,7 @@ class IEKF{
         // Predict state and covariance forward in time using CTRV motion model
         void Prediction(double delta_t);
 
-        // State vector: [px, py, v, yaw, yaw_rate]
+        // State vector: [px, py, v, yaw, yaw_rate] under a CTRV motion model.
         VectorXd x_;
         
         // State covariance matrix
@@ -33,7 +33,8 @@ class IEKF{
         // Update state using lidar measurement (linear measurement model)
         void UpdateLidar(const MeasurementPackage& meas_package);
         
-        // Update state using radar measurement (nonlinear - uses iterative refinement)
+        // Update state using radar measurement with repeated local
+        // linearization around the latest iterate.
         void UpdateRadar(const MeasurementPackage& meas_package);
         
         // Iterative update helper for radar measurements

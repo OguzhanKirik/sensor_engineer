@@ -2,6 +2,9 @@
 
 #include <stdexcept>
 
+// Two-pass RTS smoother that reuses EKF Jacobians captured during the forward
+// pass instead of relinearizing offline.
+
 std::vector<RTSStateEstimate> EKFRTSSmoother::Smooth(
     const std::vector<MeasurementPackage>& measurements) {
   EKF ekf;
@@ -37,6 +40,7 @@ std::vector<RTSStateEstimate> EKFRTSSmoother::SmoothFromHistory(
     const MatrixXd& F_jacobian = history[k + 1].F_jacobian;
     const MatrixXd& P_predicted = history[k + 1].P_predicted;
 
+    // Classical RTS gain for a linearized state transition.
     MatrixXd smoother_gain =
         P_filtered * F_jacobian.transpose() * P_predicted.inverse();
 

@@ -2,6 +2,9 @@
 
 #include <algorithm>
 
+// Sliding-window MHE scaffold. The nonlinear optimizer is not implemented yet;
+// an embedded EKF supplies the warm-start and current output.
+
 MHE::MHE()
     : x_(VectorXd::Zero(5)),
       P_(MatrixXd::Identity(5, 5)),
@@ -14,6 +17,8 @@ MHE::MHE()
 MHE::~MHE() {}
 
 void MHE::ProcessMeasurement(const MeasurementPackage& meas_package) {
+  // Reuse EKF as a warm-start so the measurement flow and horizon management
+  // can be tested before adding a true solver.
   warm_start_ekf_.ProcessMeasurument(meas_package);
 
   x_ = warm_start_ekf_.x_;
@@ -69,6 +74,8 @@ void MHE::Solve() {
 const std::deque<MHENode>& MHE::GetWindow() const { return window_; }
 
 void MHE::TrimWindow() {
+  // In a full MHE implementation the dropped node would be summarized into the
+  // arrival cost. For now it is simply removed.
   while (window_.size() > window_size_) {
     window_.pop_front();
   }

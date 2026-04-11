@@ -1,5 +1,8 @@
 #include "filters/rts/ukf_rts_smoother.h"
 
+// Unscented RTS smoother using sigma-point cross-covariances from the original
+// UKF forward pass.
+
 std::vector<UKFRTSStateEstimate> UKFRTSSmoother::Smooth(
     const std::vector<MeasurementPackage>& measurements) {
   UKF ukf;
@@ -33,6 +36,7 @@ std::vector<UKFRTSStateEstimate> UKFRTSSmoother::SmoothFromHistory(
 
     const Eigen::MatrixXd& P_cross = history[k + 1].P_cross;
     const Eigen::MatrixXd& P_predicted = history[k + 1].P_predicted;
+    // Unscented RTS gain: the cross-covariance replaces the EKF Jacobian.
     Eigen::MatrixXd smoother_gain = P_cross * P_predicted.inverse();
 
     Eigen::VectorXd state_residual =

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cmath>
 
+// IMM wrapper that adapts among CV, CA, CTRV, and CTRA motion models.
+
 // Define static const members
 const int IMM::N_MODELS;
 const int IMM::N_X;
@@ -143,7 +145,8 @@ void IMM::MixStates() {
         }
     }
     
-    // Get states from all filters (convert to common 5D representation)
+    // Convert each model-specific state into the common 5D fusion space before
+    // forming mixed initial conditions for the next prediction.
     VectorXd x_cv = cv_filter_.GetState5D();
     VectorXd x_ca = ca_filter_.GetState5D();
     VectorXd x_ctrv = ctrv_filter_.x_;
@@ -257,7 +260,7 @@ void IMM::UpdateModelProbabilities(const std::array<double, N_MODELS>& likelihoo
 }
 
 void IMM::FuseEstimate() {
-    // Combine estimates from all models weighted by their probabilities
+    // Combine estimates from all models weighted by their probabilities.
     x_.fill(0.0);
     P_.fill(0.0);
     

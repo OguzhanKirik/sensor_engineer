@@ -2,6 +2,9 @@
 #include <iostream>
 #include <cmath>
 
+// IEKF forward pass for the 5D CTRV model. The main difference from EKF is the
+// repeated radar linearization during the measurement update.
+
 IEKF::IEKF(){
     // ==========================================
     // Initialize Process Noise Parameters
@@ -172,7 +175,7 @@ void IEKF::ProcessMeasurument(MeasurementPackage meas_package){
     double dt = (meas_package.timestamp_ - time_us_) / 1000000.0;
     time_us_ = meas_package.timestamp_;
 
-    // Predict state and covariance using CTRV motion model
+    // Predict state and covariance using the same CTRV model as EKF.
     Prediction(dt);
 
     // ==========================================
@@ -217,7 +220,7 @@ void IEKF::Prediction(double dt) {
   x_ = x_pred;
   NormalizeAngle(x_(3));
 
-  // 2) Build process Jacobian Fj = df/dx
+  // 2) Build the local process linearization for covariance propagation.
   MatrixXd Fj = MatrixXd::Identity(5, 5);
 
   if (fabs(yawd) > eps) {
@@ -246,8 +249,7 @@ void IEKF::Prediction(double dt) {
     Fj(3, 4) = dt;
   }
 
-  // 3) Build process noise covariance Q
-  //    using std_a_ and std_yawdd_
+  // 3) Map longitudinal and yaw acceleration noise into state space.
   MatrixXd G = MatrixXd::Zero(5, 2);
 
   G(0, 0) = 0.5 * dt * dt * cos(yaw);
@@ -295,6 +297,8 @@ void IEKF::UpdateRadar(const MeasurementPackage& meas_package) {
     // ==========================================
     // ITERATIVE EXTENDED KALMAN FILTER UPDATE
     // ==========================================
+    // Freeze the predicted posterior. Each iteration only changes the local
+    // measurement linearization around the current iterate.
     // Save prior state and covariance before iteration
     Eigen::VectorXd x_prior = x_;
     Eigen::MatrixXd P_prior = P_;
@@ -304,7 +308,8 @@ void IEKF::UpdateRadar(const MeasurementPackage& meas_package) {
     
     // Iteratively refine the state estimate
     for (int iter = 0; iter < max_iterations_; ++iter) {
-        // Compute Jacobian at CURRENT state estimate
+        // Recompute the Jacobian at the current iterate. This is the defining
+        // IEKF step and usually improves radar linearization accuracy.
         Hj = CalculateRadarJacobian(x_);
         
         // Predict radar measurement from current state

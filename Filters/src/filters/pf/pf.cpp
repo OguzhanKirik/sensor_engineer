@@ -5,6 +5,9 @@
 
 using Eigen::VectorXd;
 
+// Bootstrap particle filter with a CTRV proposal and direct
+// likelihood-based measurement updates.
+
 PF::PF()
     : is_initialized_(false),
       previous_timestamp_(0),
@@ -36,6 +39,7 @@ double PF::NormalizeAngle(double angle) {
 
 void PF::ProcessMeasurement(const MeasurementPackage& meas_package) {
   if (!is_initialized_) {
+    // Seed a broad initial cloud to absorb unknown speed and heading.
     if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
       x_(0) = meas_package.raw_measurements_(0);
       x_(1) = meas_package.raw_measurements_(1);
@@ -80,6 +84,8 @@ void PF::ProcessMeasurement(const MeasurementPackage& meas_package) {
 
   Prediction(dt);
 
+  // Measurement updates are pure likelihood reweighting, not Kalman-style
+  // Gaussian corrections.
   if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
     UpdateLidar(meas_package);
   } else {
@@ -94,6 +100,7 @@ void PF::ProcessMeasurement(const MeasurementPackage& meas_package) {
 }
 
 void PF::Prediction(double delta_t) {
+  // Propagate each particle independently with sampled process noise.
   std::normal_distribution<double> n_a(0.0, std_a_);
   std::normal_distribution<double> n_yawdd(0.0, std_yawdd_);
 
@@ -182,6 +189,8 @@ void PF::UpdateRadar(const MeasurementPackage& meas_package) {
 }
 
 void PF::NormalizeWeights() {
+  // Guard against complete numerical collapse when tiny likelihoods are
+  // multiplied over many updates.
   double s = 0.0;
   for (int i = 0; i < n_particles_; ++i) {
     particles_[i].w = std::max(1e-300, particles_[i].w);
@@ -239,6 +248,7 @@ void PF::ResampleSystematic() {
 }
 
 void PF::ComputeStateMean() {
+  // Average yaw on the unit circle to avoid wrap-around artifacts.
   x_.setZero();
   double s = 0.0;
 
