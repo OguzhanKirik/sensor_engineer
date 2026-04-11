@@ -6,6 +6,7 @@
 #include "tools.h"
 #include "filters/iekf/iekf.hpp"
 #include "filters/rts/ekf_rts_smoother.h"
+#include "filters/lag_smoother/ukf_fixed_lag_smoother.h"
 #include "filters/rts/ukf_rts_smoother.h"
 
 class Highway
@@ -30,6 +31,8 @@ public:
 	bool use_ekf_rts = false;
 	// Run offline RTS smoothing on top of UKF after the simulation ends
 	bool use_ukf_rts = false;
+	// Run fixed-lag smoothing on top of UKF after the simulation ends
+	bool use_ukf_fixed_lag = false;
 	// Use IEKF (Iterated Extended Kalman Filter)
 	bool use_iekf = false;
 	// Use CKF (Cubature Kalman Filter)
@@ -45,8 +48,10 @@ public:
 	// Predict path in the future using UKF
 	double projectedTime = 0;
 	int projectedSteps = 0;
+	int fixed_lag_steps = 30;
 	bool rts_reported = false;
 	EKFRTSSmoother ekf_rts_smoother;
+	UKFFixedLagSmoother ukf_fixed_lag_smoother;
 	UKFRTSSmoother ukf_rts_smoother;
 	std::vector<std::vector<VectorXd>> per_car_ground_truth_;
 	// --------------------------------
@@ -57,6 +62,7 @@ public:
 		use_ekf = true;
 		use_ekf_rts = false;
 		use_ukf_rts = false;
+		use_ukf_fixed_lag = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
@@ -65,6 +71,7 @@ public:
 		use_ekf = true;
 		use_ekf_rts = true;
 		use_ukf_rts = false;
+		use_ukf_fixed_lag = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
@@ -73,6 +80,16 @@ public:
 		use_ekf = false;
 		use_ekf_rts = false;
 		use_ukf_rts = true;
+		use_ukf_fixed_lag = false;
+		use_iekf = false;
+		use_ckf = false;
+		use_pf = false;
+		use_mhe = false;
+		#elif defined(USE_UKF_FIXED_LAG)
+		use_ekf = false;
+		use_ekf_rts = false;
+		use_ukf_rts = false;
+		use_ukf_fixed_lag = true;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
@@ -81,6 +98,7 @@ public:
 		use_ekf = false;
 		use_ekf_rts = false;
 		use_ukf_rts = false;
+		use_ukf_fixed_lag = false;
 		use_iekf = true;
 		use_ckf = false;
 		use_pf = false;
@@ -89,6 +107,7 @@ public:
 		use_ekf = false;
 		use_ekf_rts = false;
 		use_ukf_rts = false;
+		use_ukf_fixed_lag = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
@@ -97,6 +116,7 @@ public:
 		use_ekf = false;
 		use_ekf_rts = false;
 		use_ukf_rts = false;
+		use_ukf_fixed_lag = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
@@ -106,6 +126,7 @@ public:
 		use_ekf = false;
 		use_ekf_rts = false;
 		use_ukf_rts = false;
+		use_ukf_fixed_lag = false;
 		use_iekf = false;
 		use_pf = false;
 		use_mhe = false;
@@ -114,6 +135,7 @@ public:
 		use_ekf = false;
 		use_ekf_rts = false;
 		use_ukf_rts = false;
+		use_ukf_fixed_lag = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_mhe = false;
@@ -386,13 +408,17 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 
 	void reportRTSResults()
 	{
-		if ((!use_ekf_rts && !use_ukf_rts) || rts_reported)
+		if ((!use_ekf_rts && !use_ukf_rts && !use_ukf_fixed_lag) || rts_reported)
 		{
 			return;
 		}
 
 		rts_reported = true;
-		std::cout << "\nRTS smoothing summary" << std::endl;
+		if (use_ukf_fixed_lag) {
+			std::cout << "\nFixed-lag smoothing summary" << std::endl;
+		} else {
+			std::cout << "\nRTS smoothing summary" << std::endl;
+		}
 
 		for (int i = 0; i < traffic.size(); ++i)
 		{
@@ -433,7 +459,7 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 					estimate << state.x(0), state.x(1), v * cos(yaw), v * sin(yaw);
 					smoothed_estimations.push_back(estimate);
 				}
-			} else if (use_ukf_rts) {
+			} else if (use_ukf_rts || use_ukf_fixed_lag) {
 				if (traffic[i].use_ekf || traffic[i].use_iekf || traffic[i].use_ckf ||
 				    traffic[i].use_pf || traffic[i].use_mhe) {
 					continue;
@@ -454,7 +480,13 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 					filtered_estimations.push_back(estimate);
 				}
 
-				auto smoothed_states = ukf_rts_smoother.SmoothFromHistory(history);
+				std::vector<UKFRTSStateEstimate> smoothed_states;
+				if (use_ukf_fixed_lag) {
+					smoothed_states =
+						ukf_fixed_lag_smoother.SmoothFromHistory(history, fixed_lag_steps);
+				} else {
+					smoothed_states = ukf_rts_smoother.SmoothFromHistory(history);
+				}
 				smoothed_estimations.reserve(smoothed_states.size());
 				for (const auto& state : smoothed_states) {
 					VectorXd estimate(4);

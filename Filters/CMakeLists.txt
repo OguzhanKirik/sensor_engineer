@@ -27,6 +27,7 @@ add_executable (filters_highway
     src/filters/ekf/ekf.cpp 
     src/filters/mhe/mhe.cpp
     src/filters/rts/ekf_rts_smoother.cpp
+    src/filters/lag_smoother/ukf_fixed_lag_smoother.cpp
     src/filters/rts/ukf_rts_smoother.cpp
     src/filters/iekf/iekf.cpp
     src/filters/ckf/ckf.cpp
@@ -44,6 +45,7 @@ add_executable (ckf_highway
     src/filters/ekf/ekf.cpp 
     src/filters/mhe/mhe.cpp
     src/filters/rts/ekf_rts_smoother.cpp
+    src/filters/lag_smoother/ukf_fixed_lag_smoother.cpp
     src/filters/rts/ukf_rts_smoother.cpp
     src/filters/iekf/iekf.cpp
     src/filters/pf/pf.cpp
@@ -59,6 +61,7 @@ add_executable (ekf_highway
     src/filters/ekf/ekf.cpp 
     src/filters/mhe/mhe.cpp
     src/filters/rts/ekf_rts_smoother.cpp
+    src/filters/lag_smoother/ukf_fixed_lag_smoother.cpp
     src/filters/rts/ukf_rts_smoother.cpp
     src/filters/ukf/ukf.cpp 
     src/filters/ckf/ckf.cpp
@@ -76,6 +79,7 @@ add_executable (ekf_rts_highway
     src/filters/ekf/ekf.cpp
     src/filters/mhe/mhe.cpp
     src/filters/rts/ekf_rts_smoother.cpp
+    src/filters/lag_smoother/ukf_fixed_lag_smoother.cpp
     src/filters/rts/ukf_rts_smoother.cpp
     src/filters/ukf/ukf.cpp
     src/filters/ckf/ckf.cpp
@@ -111,6 +115,7 @@ add_executable (ukf_rts_highway
     src/filters/ekf/ekf.cpp
     src/filters/mhe/mhe.cpp
     src/filters/rts/ekf_rts_smoother.cpp
+    src/filters/lag_smoother/ukf_fixed_lag_smoother.cpp
     src/filters/rts/ukf_rts_smoother.cpp
     src/filters/ckf/ckf.cpp
     src/filters/iekf/iekf.cpp
@@ -121,6 +126,24 @@ add_executable (ukf_rts_highway
 target_link_libraries (ukf_rts_highway ${PCL_LIBRARIES})
 target_compile_definitions(ukf_rts_highway PRIVATE USE_UKF_RTS)
 
+# UKF fixed-lag smoothing executable
+add_executable (ukf_fixed_lag_highway
+    src/main.cpp
+    src/filters/ukf/ukf.cpp
+    src/filters/ekf/ekf.cpp
+    src/filters/mhe/mhe.cpp
+    src/filters/rts/ekf_rts_smoother.cpp
+    src/filters/lag_smoother/ukf_fixed_lag_smoother.cpp
+    src/filters/rts/ukf_rts_smoother.cpp
+    src/filters/ckf/ckf.cpp
+    src/filters/iekf/iekf.cpp
+    src/filters/pf/pf.cpp
+    src/tools.cpp
+    src/render/render.cpp
+)
+target_link_libraries (ukf_fixed_lag_highway ${PCL_LIBRARIES})
+target_compile_definitions(ukf_fixed_lag_highway PRIVATE USE_UKF_FIXED_LAG)
+
 # UKF Filter executable (Unscented Kalman Filter)
 add_executable (ukf_highway 
     src/main.cpp 
@@ -128,6 +151,7 @@ add_executable (ukf_highway
     src/filters/ekf/ekf.cpp 
     src/filters/mhe/mhe.cpp
     src/filters/rts/ekf_rts_smoother.cpp
+    src/filters/lag_smoother/ukf_fixed_lag_smoother.cpp
     src/filters/rts/ukf_rts_smoother.cpp
     src/filters/ckf/ckf.cpp
     src/filters/iekf/iekf.cpp
@@ -146,6 +170,7 @@ add_executable (pf_highway
     src/filters/ekf/ekf.cpp 
     src/filters/mhe/mhe.cpp
     src/filters/rts/ekf_rts_smoother.cpp
+    src/filters/lag_smoother/ukf_fixed_lag_smoother.cpp
     src/filters/rts/ukf_rts_smoother.cpp
     src/filters/iekf/iekf.cpp
     src/filters/ckf/ckf.cpp
@@ -162,6 +187,7 @@ add_executable (imm_highway
     src/filters/ekf/ekf.cpp 
     src/filters/mhe/mhe.cpp
     src/filters/rts/ekf_rts_smoother.cpp
+    src/filters/lag_smoother/ukf_fixed_lag_smoother.cpp
     src/filters/rts/ukf_rts_smoother.cpp
     src/filters/iekf/iekf.cpp
     src/filters/ckf/ckf.cpp
@@ -185,6 +211,7 @@ add_executable (iekf_highway
     src/filters/ekf/ekf.cpp 
     src/filters/mhe/mhe.cpp
     src/filters/rts/ekf_rts_smoother.cpp
+    src/filters/lag_smoother/ukf_fixed_lag_smoother.cpp
     src/filters/rts/ukf_rts_smoother.cpp
     src/filters/ckf/ckf.cpp
     src/filters/pf/pf.cpp
