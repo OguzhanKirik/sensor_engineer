@@ -5,6 +5,7 @@
 #include "sensors/lidar.h"
 #include "tools.h"
 #include "filters/iekf/iekf.hpp"
+#include "filters/rts/ekf_rts_smoother.h"
 
 class Highway
 {
@@ -24,12 +25,16 @@ public:
 	std::vector<bool> trackCars = {true,true,true};
 	// Use EKF instead of UKF (false = UKF, true = EKF)
 	bool use_ekf = true;
+	// Run offline RTS smoothing on top of EKF after the simulation ends
+	bool use_ekf_rts = false;
 	// Use IEKF (Iterated Extended Kalman Filter)
 	bool use_iekf = false;
 	// Use CKF (Cubature Kalman Filter)
 	bool use_ckf = false;
 	// Use PF (Particle Filter)
 	bool use_pf = false;
+	// Use MHE (Moving Horizon Estimation scaffold)
+	bool use_mhe = false;
 	// Visualize sensor measurements
 	bool visualize_lidar = true;
 	bool visualize_radar = true;
@@ -37,38 +42,66 @@ public:
 	// Predict path in the future using UKF
 	double projectedTime = 0;
 	int projectedSteps = 0;
+	bool rts_reported = false;
+	EKFRTSSmoother ekf_rts_smoother;
+	std::vector<std::vector<VectorXd>> per_car_ground_truth_;
 	// --------------------------------
 
 	Highway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 	{
 		#ifdef USE_EKF
 		use_ekf = true;
+		use_ekf_rts = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
+		use_mhe = false;
+		#elif defined(USE_EKF_RTS)
+		use_ekf = true;
+		use_ekf_rts = true;
+		use_iekf = false;
+		use_ckf = false;
+		use_pf = false;
+		use_mhe = false;
 		#elif defined(USE_IEKF)
 		use_ekf = false;
+		use_ekf_rts = false;
 		use_iekf = true;
 		use_ckf = false;
 		use_pf = false;
-		#elif defined(USE_UKF)
+		use_mhe = false;
+		#elif defined(USE_MHE)
 		use_ekf = false;
+		use_ekf_rts = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
+		use_mhe = true;
+		#elif defined(USE_UKF)
+		use_ekf = false;
+		use_ekf_rts = false;
+		use_iekf = false;
+		use_ckf = false;
+		use_pf = false;
+		use_mhe = false;
 		#elif defined(USE_CKF)
 		use_ckf = true;
 		use_ekf = false;
+		use_ekf_rts = false;
 		use_iekf = false;
 		use_pf = false;
+		use_mhe = false;
 		#elif defined(USE_PF)
 		use_pf = true;
 		use_ekf = false;
+		use_ekf_rts = false;
 		use_iekf = false;
 		use_ckf = false;
+		use_mhe = false;
 		#endif
 
 		tools = Tools();
+		per_car_ground_truth_.resize(trackCars.size());
 	
 		egoCar = Car(Vect3(0, 0, 0), Vect3(4, 2, 2), Color(0, 1, 0), 0, 0, 2, "egoCar");
 		
@@ -91,6 +124,11 @@ public:
 			{
 				PF pf1;
 				car1.setPF(pf1);
+			}
+			else if(use_mhe)
+			{
+				MHE mhe1;
+				car1.setMHE(mhe1);
 			}
 			else if(use_ckf)
 			{
@@ -129,12 +167,17 @@ public:
 				PF pf2;
 				car2.setPF(pf2);
 			}
+			else if(use_mhe)
+			{
+				MHE mhe2;
+				car2.setMHE(mhe2);
+			}
 			else if(use_ckf)
 			{
 				CKF ckf2;
 				car2.setCKF(ckf2);
 			}
-			else if(use_iekf)
+			else if (use_iekf)
 			{
 				IEKF iekf2;
 				car2.setIEKF(iekf2);
@@ -175,6 +218,11 @@ public:
 		{
 			PF pf3;
 			car3.setPF(pf3);
+		}
+		else if(use_mhe)
+		{
+			MHE mhe3;
+			car3.setMHE(mhe3);
 		}
 		else if(use_ckf)
 		{
@@ -234,14 +282,20 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 				VectorXd gt(4);
 				gt << traffic[i].position.x, traffic[i].position.y, traffic[i].velocity*cos(traffic[i].angle), traffic[i].velocity*sin(traffic[i].angle);
 				tools.ground_truth.push_back(gt);
+				per_car_ground_truth_[i].push_back(gt);
 				tools.lidarSense(traffic[i], viewer, timestamp, visualize_lidar);
+				per_car_ground_truth_[i].push_back(gt);
 				tools.radarSense(traffic[i], egoCar, viewer, timestamp, visualize_radar);
 				tools.ukfResults(traffic[i],viewer, projectedTime, projectedSteps);
 				VectorXd estimate(4);
-			// Get state from active filter (EKF, UKF, or CKF)
+			// Get state from active filter  (EKF, IEKF, UKF, CKF, or PF)
 			VectorXd x_state;
 			if(traffic[i].use_ekf) {
 				x_state = traffic[i].ekf.x_;
+			} else if(traffic[i].use_mhe) {
+				x_state = traffic[i].mhe.x_;
+			} else if(traffic[i].use_iekf) {
+				x_state = traffic[i].iekf.x_;
 			} else if(traffic[i].use_ckf) {
 				x_state = traffic[i].ckf.x_;
 			} else if(traffic[i].use_pf) {
@@ -309,6 +363,69 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 				viewer->addText("Vy: "+std::to_string(rmseFailLog[3]), 30, 50, 20, 1, 0, 0, "rmse_fail_vy");
 		}
 		
+	}
+
+	void reportRTSResults()
+	{
+		if (!use_ekf_rts || rts_reported)
+		{
+			return;
+		}
+
+		rts_reported = true;
+		std::cout << "\nRTS smoothing summary" << std::endl;
+
+		for (int i = 0; i < traffic.size(); ++i)
+		{
+			if (!trackCars[i] || !traffic[i].use_ekf)
+			{
+				continue;
+			}
+
+			const auto& history = traffic[i].ekf.GetStepHistory();
+			if (history.empty() || per_car_ground_truth_[i].size() != history.size())
+			{
+				std::cout << traffic[i].name << ": RTS skipped due to history size mismatch" << std::endl;
+				continue;
+			}
+
+			std::vector<VectorXd> filtered_estimations;
+			filtered_estimations.reserve(history.size());
+			for (const auto& step : history)
+			{
+				VectorXd estimate(4);
+				double v = step.x_filtered(2);
+				double yaw = step.x_filtered(3);
+				estimate << step.x_filtered(0), step.x_filtered(1), v * cos(yaw), v * sin(yaw);
+				filtered_estimations.push_back(estimate);
+			}
+
+			auto smoothed_states = ekf_rts_smoother.SmoothFromHistory(history);
+			std::vector<VectorXd> smoothed_estimations;
+			smoothed_estimations.reserve(smoothed_states.size());
+			for (const auto& state : smoothed_states)
+			{
+				VectorXd estimate(4);
+				double v = state.x(2);
+				double yaw = state.x(3);
+				estimate << state.x(0), state.x(1), v * cos(yaw), v * sin(yaw);
+				smoothed_estimations.push_back(estimate);
+			}
+
+			VectorXd filtered_rmse = tools.CalculateRMSE(filtered_estimations, per_car_ground_truth_[i]);
+			VectorXd smoothed_rmse = tools.CalculateRMSE(smoothed_estimations, per_car_ground_truth_[i]);
+
+			std::cout << traffic[i].name
+			          << " filtered RMSE: X=" << filtered_rmse(0)
+			          << " Y=" << filtered_rmse(1)
+			          << " Vx=" << filtered_rmse(2)
+			          << " Vy=" << filtered_rmse(3) << std::endl;
+			std::cout << traffic[i].name
+			          << " smoothed RMSE: X=" << smoothed_rmse(0)
+			          << " Y=" << smoothed_rmse(1)
+			          << " Vx=" << smoothed_rmse(2)
+			          << " Vy=" << smoothed_rmse(3) << std::endl;
+		}
 	}
 	
 };

@@ -30,15 +30,14 @@ class IEKF{
         MatrixXd P_;
 
     private:
-        // Update state using lidar measurement (linear but using iterative approach)
+        // Update state using lidar measurement (linear measurement model)
         void UpdateLidar(const MeasurementPackage& meas_package);
         
-        // Update state using radar measurement (nonlinear - uses IEKF iterations)
+        // Update state using radar measurement (nonlinear - uses iterative refinement)
         void UpdateRadar(const MeasurementPackage& meas_package);
         
         // Iterative update helper for radar measurements
-        // Performs multiple iterations to handle non-linearity better
-        void UpdateRadarIterative(const Eigen::VectorXd& z, const Eigen::MatrixXd& H, const Eigen::MatrixXd& R);
+        void UpdateRadarIterative(const Eigen::VectorXd& z);
         
         // Calculate Jacobian matrix for radar measurement (linearization of h(x))
         Eigen::MatrixXd CalculateRadarJacobian(const Eigen::VectorXd& x_state);
