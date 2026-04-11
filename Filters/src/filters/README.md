@@ -22,6 +22,9 @@ filters/
 ├── pf/                     - Particle Filter
 │   ├── pf.h
 │   └── pf.cpp
+├── mhe/                    - Moving Horizon Estimation scaffold
+│   ├── mhe.h
+│   └── mhe.cpp
 ├── rts/                    - Rauch-Tung-Striebel smoother
 │   ├── ekf_rts_smoother.h
 │   └── ekf_rts_smoother.cpp
@@ -96,7 +99,18 @@ See [ckf/CKF_README.md](ckf/CKF_README.md) for detailed CKF documentation.
 
 **Important**: RTS is not a real-time causal estimator. It runs EKF forward first, then performs a backward correction pass using future measurements to refine earlier states.
 
-### 6. IMM (Interacting Multiple Model Filter)
+### 6. MHE (Moving Horizon Estimation)
+**Location**: `mhe/`
+
+- **Type**: Sliding-window optimization-based estimator
+- **State**: [px, py, v, yaw, yaw_rate]
+- **Best For**: Constrained nonlinear estimation and future solver-based work
+- **Complexity**: High
+- **Performance**: Potentially very strong, but depends heavily on solver quality and tuning
+
+**Current Status**: The class is created as a scaffold. It maintains a moving window, arrival-cost placeholders, and an EKF warm-start path, but it does not yet solve the nonlinear MHE optimization problem.
+
+### 7. IMM (Interacting Multiple Model Filter)
 **Location**: `imm/`
 
 - **Type**: Multi-model adaptive filter
@@ -116,6 +130,7 @@ See [imm/IMM_README.md](imm/IMM_README.md) for detailed IMM documentation.
 |--------|------|-------------|-----------|--------------|---------------|
 | **EKF** | Higher | Lowest | Simple | None | Low |
 | **EKF + RTS** | Lower than EKF | Low forward + offline backward pass | Offline evaluation | None | Low |
+| **MHE** | Placeholder until solver is added | Moderate | Sliding-window estimation | Constraints possible | High |
 | **IEKF** | Medium | Low | Simple-Medium | None | Low |
 | **UKF** | Medium | Medium | Standard | None | Medium (α,β,κ) |
 | **CKF** | Medium | Medium | Standard | None | **None** |
@@ -133,6 +148,9 @@ bool use_ekf = true;  // Set to false for UKF
 
 // Run offline RTS smoothing after the EKF simulation ends
 bool use_ekf_rts = false; // Enabled by ekf_rts_highway
+
+// Use MHE (Moving Horizon Estimation scaffold)
+bool use_mhe = false; // Enabled by mhe_highway
 
 // Use IEKF (Iterated Extended Kalman Filter)
 bool use_iekf = false; // Set to true for IEKF
@@ -159,6 +177,9 @@ make
 
 # Run EKF + RTS smoother
 ./ekf_rts_highway
+
+# Run MHE scaffold
+./mhe_highway
 
 # Run Iterated Extended Kalman Filter
 ./iekf_highway
@@ -188,6 +209,12 @@ make
 - ✅ You want backward correction of earlier EKF estimates
 - ✅ You care about post-run trajectory quality and RMSE
 - ✅ Real-time output is not required
+
+### Use MHE when:
+- ✅ You want the codebase scaffold for future constrained estimation work
+- ✅ You plan to add a solver-backed sliding-window estimator
+- ✅ You want to test the integration path in the highway harness now
+- ❌ You do not yet need true MHE performance, because the nonlinear solve is not implemented
 
 ### Use IEKF when:
 - ✅ You want better accuracy than EKF without jumping to UKF
