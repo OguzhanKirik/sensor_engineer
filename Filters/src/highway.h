@@ -4,6 +4,7 @@
 #include "render/render.h"
 #include "sensors/lidar.h"
 #include "tools.h"
+#include "filters/iekf/iekf.hpp"
 
 class Highway
 {
@@ -23,6 +24,8 @@ public:
 	std::vector<bool> trackCars = {true,true,true};
 	// Use EKF instead of UKF (false = UKF, true = EKF)
 	bool use_ekf = true;
+	// Use IEKF (Iterated Extended Kalman Filter)
+	bool use_iekf = false;
 	// Use CKF (Cubature Kalman Filter)
 	bool use_ckf = false;
 	// Use PF (Particle Filter)
@@ -40,19 +43,28 @@ public:
 	{
 		#ifdef USE_EKF
 		use_ekf = true;
+		use_iekf = false;
+		use_ckf = false;
+		use_pf = false;
+		#elif defined(USE_IEKF)
+		use_ekf = false;
+		use_iekf = true;
 		use_ckf = false;
 		use_pf = false;
 		#elif defined(USE_UKF)
 		use_ekf = false;
+		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
 		#elif defined(USE_CKF)
 		use_ckf = true;
 		use_ekf = false;
+		use_iekf = false;
 		use_pf = false;
 		#elif defined(USE_PF)
 		use_pf = true;
 		use_ekf = false;
+		use_iekf = false;
 		use_ckf = false;
 		#endif
 
@@ -85,6 +97,11 @@ public:
 				CKF ckf1;
 				car1.setCKF(ckf1);
 			}
+			else if(use_iekf)
+			{
+				IEKF iekf1;
+				car1.setIEKF(iekf1);
+			}
 			else if(use_ekf)
 			{
 				EKF ekf1;
@@ -116,6 +133,11 @@ public:
 			{
 				CKF ckf2;
 				car2.setCKF(ckf2);
+			}
+			else if(use_iekf)
+			{
+				IEKF iekf2;
+				car2.setIEKF(iekf2);
 			}
 			else if(use_ekf)
 			{
@@ -158,6 +180,11 @@ public:
 		{
 			CKF ckf3;
 			car3.setCKF(ckf3);
+		}
+		else if(use_iekf)
+		{
+			IEKF iekf3;
+			car3.setIEKF(iekf3);
 		}
 		else if(use_ekf)
 		{

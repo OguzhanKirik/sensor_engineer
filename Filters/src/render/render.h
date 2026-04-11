@@ -11,6 +11,7 @@
 #include <string>
 #include "../filters/ukf/ukf.h"
 #include "../filters/ekf/ekf.hpp"
+#include "../filters/iekf/iekf.hpp"
 #include "../filters/ckf/ckf.h"
 #include "../filters/pf/pf.h"
 
@@ -73,9 +74,11 @@ struct Car
 
 	UKF ukf;
 	EKF ekf;
+	IEKF iekf;
 	CKF ckf;
 	PF pf;
 	bool use_ekf;
+	bool use_iekf;
 	bool use_ckf;
 	bool use_pf;
 
@@ -90,6 +93,7 @@ struct Car
 		: position(Vect3(0,0,0)), dimensions(Vect3(0,0,0)), color(Color(0,0,0))
 	{
 		use_ekf = false;
+		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
 	}
@@ -102,6 +106,7 @@ struct Car
 		steering = 0;
 		accuateIndex = -1;
 		use_ekf = false;
+		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
 
@@ -162,6 +167,7 @@ struct Car
 	{
 		ukf = tracker;
 		use_ekf = false;
+		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
 	}
@@ -170,6 +176,16 @@ struct Car
 	{
 		ekf = tracker;
 		use_ekf = true;
+		use_iekf = false;
+		use_ckf = false;
+		use_pf = false;
+	}
+
+	void setIEKF(IEKF tracker)
+	{
+		iekf = tracker;
+		use_ekf = false;
+		use_iekf = true;
 		use_ckf = false;
 		use_pf = false;
 	}
@@ -178,6 +194,7 @@ struct Car
 	{
 		ckf = tracker;
 		use_ekf = false;
+		use_iekf = false;
 		use_ckf = true;
 		use_pf = false;
 	}
@@ -186,6 +203,7 @@ struct Car
 	{
 		pf = tracker;
 		use_ekf = false;
+		use_iekf = false;
 		use_ckf = false;
 		use_pf = true;
 	}

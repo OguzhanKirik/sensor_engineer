@@ -25,6 +25,7 @@ add_executable (filters_highway
     src/main.cpp 
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
+    src/filters/iekf/iekf.cpp
     src/filters/ckf/ckf.cpp
     src/filters/pf/pf.cpp
     src/tools.cpp 
@@ -38,6 +39,7 @@ add_executable (ckf_highway
     src/filters/ckf/ckf.cpp 
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
+    src/filters/iekf/iekf.cpp
     src/filters/pf/pf.cpp
     src/tools.cpp 
     src/render/render.cpp
@@ -51,6 +53,7 @@ add_executable (ekf_highway
     src/filters/ekf/ekf.cpp 
     src/filters/ukf/ukf.cpp 
     src/filters/ckf/ckf.cpp
+    src/filters/iekf/iekf.cpp
     src/filters/pf/pf.cpp
     src/tools.cpp 
     src/render/render.cpp
@@ -64,6 +67,7 @@ add_executable (ukf_highway
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
     src/filters/ckf/ckf.cpp
+    src/filters/iekf/iekf.cpp
     src/filters/pf/pf.cpp
     src/tools.cpp 
     src/render/render.cpp
@@ -77,6 +81,7 @@ add_executable (pf_highway
     src/filters/pf/pf.cpp
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
+    src/filters/iekf/iekf.cpp
     src/filters/ckf/ckf.cpp
     src/tools.cpp 
     src/render/render.cpp
@@ -89,6 +94,7 @@ add_executable (imm_highway
     src/main.cpp 
     src/filters/ukf/ukf.cpp 
     src/filters/ekf/ekf.cpp 
+    src/filters/iekf/iekf.cpp
     src/filters/ckf/ckf.cpp
     src/filters/pf/pf.cpp
     src/motion_models/cv_ekf.cpp
@@ -101,3 +107,17 @@ add_executable (imm_highway
 )
 target_link_libraries (imm_highway ${PCL_LIBRARIES})
 target_compile_definitions(imm_highway PRIVATE USE_IMM)
+
+# IEKF Filter executable (Iterated Extended Kalman Filter)
+add_executable (iekf_highway 
+    src/main.cpp 
+    src/filters/iekf/iekf.cpp 
+    src/filters/ukf/ukf.cpp 
+    src/filters/ekf/ekf.cpp 
+    src/filters/ckf/ckf.cpp
+    src/filters/pf/pf.cpp
+    src/tools.cpp 
+    src/render/render.cpp
+)
+target_link_libraries (iekf_highway ${PCL_LIBRARIES})
+target_compile_definitions(iekf_highway PRIVATE USE_IEKF)
