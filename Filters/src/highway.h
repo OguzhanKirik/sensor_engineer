@@ -6,6 +6,7 @@
 #include "tools.h"
 #include "filters/iekf/iekf.hpp"
 #include "filters/rts/ekf_rts_smoother.h"
+#include "filters/rts/ukf_rts_smoother.h"
 
 class Highway
 {
@@ -27,6 +28,8 @@ public:
 	bool use_ekf = true;
 	// Run offline RTS smoothing on top of EKF after the simulation ends
 	bool use_ekf_rts = false;
+	// Run offline RTS smoothing on top of UKF after the simulation ends
+	bool use_ukf_rts = false;
 	// Use IEKF (Iterated Extended Kalman Filter)
 	bool use_iekf = false;
 	// Use CKF (Cubature Kalman Filter)
@@ -44,6 +47,7 @@ public:
 	int projectedSteps = 0;
 	bool rts_reported = false;
 	EKFRTSSmoother ekf_rts_smoother;
+	UKFRTSSmoother ukf_rts_smoother;
 	std::vector<std::vector<VectorXd>> per_car_ground_truth_;
 	// --------------------------------
 
@@ -52,6 +56,7 @@ public:
 		#ifdef USE_EKF
 		use_ekf = true;
 		use_ekf_rts = false;
+		use_ukf_rts = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
@@ -59,6 +64,15 @@ public:
 		#elif defined(USE_EKF_RTS)
 		use_ekf = true;
 		use_ekf_rts = true;
+		use_ukf_rts = false;
+		use_iekf = false;
+		use_ckf = false;
+		use_pf = false;
+		use_mhe = false;
+		#elif defined(USE_UKF_RTS)
+		use_ekf = false;
+		use_ekf_rts = false;
+		use_ukf_rts = true;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
@@ -66,6 +80,7 @@ public:
 		#elif defined(USE_IEKF)
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ukf_rts = false;
 		use_iekf = true;
 		use_ckf = false;
 		use_pf = false;
@@ -73,6 +88,7 @@ public:
 		#elif defined(USE_MHE)
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ukf_rts = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
@@ -80,6 +96,7 @@ public:
 		#elif defined(USE_UKF)
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ukf_rts = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_pf = false;
@@ -88,6 +105,7 @@ public:
 		use_ckf = true;
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ukf_rts = false;
 		use_iekf = false;
 		use_pf = false;
 		use_mhe = false;
@@ -95,6 +113,7 @@ public:
 		use_pf = true;
 		use_ekf = false;
 		use_ekf_rts = false;
+		use_ukf_rts = false;
 		use_iekf = false;
 		use_ckf = false;
 		use_mhe = false;
@@ -367,7 +386,7 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 
 	void reportRTSResults()
 	{
-		if (!use_ekf_rts || rts_reported)
+		if ((!use_ekf_rts && !use_ukf_rts) || rts_reported)
 		{
 			return;
 		}
@@ -377,39 +396,73 @@ void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl
 
 		for (int i = 0; i < traffic.size(); ++i)
 		{
-			if (!trackCars[i] || !traffic[i].use_ekf)
+			if (!trackCars[i])
 			{
-				continue;
-			}
-
-			const auto& history = traffic[i].ekf.GetStepHistory();
-			if (history.empty() || per_car_ground_truth_[i].size() != history.size())
-			{
-				std::cout << traffic[i].name << ": RTS skipped due to history size mismatch" << std::endl;
 				continue;
 			}
 
 			std::vector<VectorXd> filtered_estimations;
-			filtered_estimations.reserve(history.size());
-			for (const auto& step : history)
-			{
-				VectorXd estimate(4);
-				double v = step.x_filtered(2);
-				double yaw = step.x_filtered(3);
-				estimate << step.x_filtered(0), step.x_filtered(1), v * cos(yaw), v * sin(yaw);
-				filtered_estimations.push_back(estimate);
-			}
-
-			auto smoothed_states = ekf_rts_smoother.SmoothFromHistory(history);
 			std::vector<VectorXd> smoothed_estimations;
-			smoothed_estimations.reserve(smoothed_states.size());
-			for (const auto& state : smoothed_states)
-			{
-				VectorXd estimate(4);
-				double v = state.x(2);
-				double yaw = state.x(3);
-				estimate << state.x(0), state.x(1), v * cos(yaw), v * sin(yaw);
-				smoothed_estimations.push_back(estimate);
+
+			if (use_ekf_rts) {
+				if (!traffic[i].use_ekf) {
+					continue;
+				}
+
+				const auto& history = traffic[i].ekf.GetStepHistory();
+				if (history.empty() || per_car_ground_truth_[i].size() != history.size()) {
+					std::cout << traffic[i].name << ": RTS skipped due to history size mismatch" << std::endl;
+					continue;
+				}
+
+				filtered_estimations.reserve(history.size());
+				for (const auto& step : history) {
+					VectorXd estimate(4);
+					double v = step.x_filtered(2);
+					double yaw = step.x_filtered(3);
+					estimate << step.x_filtered(0), step.x_filtered(1), v * cos(yaw), v * sin(yaw);
+					filtered_estimations.push_back(estimate);
+				}
+
+				auto smoothed_states = ekf_rts_smoother.SmoothFromHistory(history);
+				smoothed_estimations.reserve(smoothed_states.size());
+				for (const auto& state : smoothed_states) {
+					VectorXd estimate(4);
+					double v = state.x(2);
+					double yaw = state.x(3);
+					estimate << state.x(0), state.x(1), v * cos(yaw), v * sin(yaw);
+					smoothed_estimations.push_back(estimate);
+				}
+			} else if (use_ukf_rts) {
+				if (traffic[i].use_ekf || traffic[i].use_iekf || traffic[i].use_ckf ||
+				    traffic[i].use_pf || traffic[i].use_mhe) {
+					continue;
+				}
+
+				const auto& history = traffic[i].ukf.GetStepHistory();
+				if (history.empty() || per_car_ground_truth_[i].size() != history.size()) {
+					std::cout << traffic[i].name << ": UKF RTS skipped due to history size mismatch" << std::endl;
+					continue;
+				}
+
+				filtered_estimations.reserve(history.size());
+				for (const auto& step : history) {
+					VectorXd estimate(4);
+					double v = step.x_filtered(2);
+					double yaw = step.x_filtered(3);
+					estimate << step.x_filtered(0), step.x_filtered(1), v * cos(yaw), v * sin(yaw);
+					filtered_estimations.push_back(estimate);
+				}
+
+				auto smoothed_states = ukf_rts_smoother.SmoothFromHistory(history);
+				smoothed_estimations.reserve(smoothed_states.size());
+				for (const auto& state : smoothed_states) {
+					VectorXd estimate(4);
+					double v = state.x(2);
+					double yaw = state.x(3);
+					estimate << state.x(0), state.x(1), v * cos(yaw), v * sin(yaw);
+					smoothed_estimations.push_back(estimate);
+				}
 			}
 
 			VectorXd filtered_rmse = tools.CalculateRMSE(filtered_estimations, per_car_ground_truth_[i]);

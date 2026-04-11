@@ -77,11 +77,25 @@ UKF::UKF() {
   }
 
   Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1); //predicted sigma points matrix
+  last_x_pred_ = VectorXd::Zero(n_x_);
+  last_P_pred_ = MatrixXd::Identity(n_x_, n_x_);
+  last_P_cross_ = MatrixXd::Zero(n_x_, n_x_);
   
 
 }
 
 UKF::~UKF() {}
+
+void UKF::ClearStepHistory() { step_history_.clear(); }
+
+const std::vector<UKFRTSStepData>& UKF::GetStepHistory() const {
+  return step_history_;
+}
+
+void UKF::NormalizeAngle(double& angle) {
+  while (angle > M_PI) angle -= 2.0 * M_PI;
+  while (angle < -M_PI) angle += 2.0 * M_PI;
+}
 
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   /**
@@ -124,6 +138,16 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
             0,0,0,1,0,
             0,0,0,0,1;
     }
+
+    UKFRTSStepData init_step;
+    init_step.timestamp = time_us_;
+    init_step.is_initialization = true;
+    init_step.x_filtered = x_;
+    init_step.P_filtered = P_;
+    init_step.x_predicted = x_;
+    init_step.P_predicted = P_;
+    init_step.P_cross = P_;
+    step_history_.push_back(init_step);
     return; // Return after initialization, don't process first measurement
   }
   
@@ -140,6 +164,16 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   }else if(meas_package.sensor_type_ == MeasurementPackage::RADAR){
       UpdateRadar(meas_package );
   }
+
+  UKFRTSStepData step;
+  step.timestamp = meas_package.timestamp_;
+  step.is_initialization = false;
+  step.x_filtered = x_;
+  step.P_filtered = P_;
+  step.x_predicted = last_x_pred_;
+  step.P_predicted = last_P_pred_;
+  step.P_cross = last_P_cross_;
+  step_history_.push_back(step);
 }
 
 void UKF::Prediction(double delta_t) {
@@ -155,8 +189,10 @@ void UKF::Prediction(double delta_t) {
   assert(weights_.size() == 2 * n_aug_ + 1);
   assert(lambda_ + n_aug_ > 0.0);
 
+  const VectorXd x_filtered_before = x_;
+  const MatrixXd P_filtered_before = P_;
+
    //Build augmented state with sensor noise
-  MatrixXd Xsig = MatrixXd(n_x_, 2 * n_x_ + 1);
   VectorXd x_aug = VectorXd(7);
   x_aug.head(5) = x_;
   x_aug(5) = 0;
@@ -274,6 +310,19 @@ void UKF::Prediction(double delta_t) {
   assert(P_(3,3) >= 0.0);
   assert(P_(4,4) >= 0.0);
 
+  last_x_pred_ = x_;
+  last_P_pred_ = P_;
+
+  MatrixXd Xsig_state = Xsig_aug.topRows(n_x_);
+  last_P_cross_ = MatrixXd::Zero(n_x_, n_x_);
+  for (int i = 0; i < 2 * n_aug_ + 1; ++i) {
+    VectorXd x_diff = Xsig_state.col(i) - x_filtered_before;
+    VectorXd x_pred_diff = Xsig_pred_.col(i) - x_;
+    NormalizeAngle(x_diff(3));
+    NormalizeAngle(x_pred_diff(3));
+    last_P_cross_ += weights_(i) * x_diff * x_pred_diff.transpose();
+  }
+
 
 }
 
@@ -353,6 +402,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   //Update state mean and covariance
   x_ = x_ + K * z_diff;
   P_ = P_ - K * S * K.transpose();
+  NormalizeAngle(x_(3));
 
 }
 
@@ -445,5 +495,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     //Update state mean and covariance
     x_ = x_ + K * z_diff;
     P_ = P_ - K * S * K.transpose();
+    NormalizeAngle(x_(3));
 
 }

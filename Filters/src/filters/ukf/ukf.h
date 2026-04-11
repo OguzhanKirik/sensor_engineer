@@ -3,6 +3,17 @@
 
 #include <Eigen/Dense>
 #include "measurement_package.h"
+#include <vector>
+
+struct UKFRTSStepData {
+  long long timestamp = 0;
+  bool is_initialization = false;
+  Eigen::VectorXd x_filtered;
+  Eigen::MatrixXd P_filtered;
+  Eigen::VectorXd x_predicted;
+  Eigen::MatrixXd P_predicted;
+  Eigen::MatrixXd P_cross;
+};
 
 class UKF {
  public:
@@ -40,6 +51,12 @@ class UKF {
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+  // Clear cached forward-pass history used by offline smoothers.
+  void ClearStepHistory();
+
+  // Access cached forward-pass history for RTS smoothing.
+  const std::vector<UKFRTSStepData>& GetStepHistory() const;
 
 
   // initially set to false, set to true in first call of ProcessMeasurement
@@ -95,6 +112,14 @@ class UKF {
 
   // Sigma point spreading parameter
   double lambda_;
+
+ private:
+  void NormalizeAngle(double& angle);
+
+  Eigen::VectorXd last_x_pred_;
+  Eigen::MatrixXd last_P_pred_;
+  Eigen::MatrixXd last_P_cross_;
+  std::vector<UKFRTSStepData> step_history_;
 };
 
 #endif  // UKF_H
