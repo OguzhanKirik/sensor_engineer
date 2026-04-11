@@ -66,10 +66,21 @@ EKF::EKF(){
 
     // Process noise covariance matrix (computed dynamically in Prediction)
     Q_ = MatrixXd(5,5);
+    last_x_pred_ = VectorXd(5);
+    last_P_pred_ = MatrixXd(5, 5);
+    last_F_jacobian_ = MatrixXd::Identity(5, 5);
     
 };
 
 EKF::~EKF() {}
+
+void EKF::ClearStepHistory() {
+    step_history_.clear();
+}
+
+const std::vector<EKFRTSStepData>& EKF::GetStepHistory() const {
+    return step_history_;
+}
 
 void EKF::NormalizeAngle(double& angle) {
   while (angle > M_PI) angle -= 2.0 * M_PI;
@@ -156,8 +167,9 @@ void EKF::ProcessMeasurument(MeasurementPackage meas_package){
             double rho_dot = meas_package.raw_measurements_(2);  // range rate
 
             // Convert polar to Cartesian coordinates for state initialization
-            x_ << rho * cos(phi), rho * sin(phi), 0, 0, 0,
-            
+            (void)rho_dot;
+            x_ << rho * cos(phi), rho * sin(phi), 0, 0, 0;
+
             // Initialize covariance: uncertainty based on radar noise
             P_ << std_radr_*std_radr_,0,0,0,0,
                     0,std_radr_*std_radr_,0,0,0,
@@ -165,6 +177,16 @@ void EKF::ProcessMeasurument(MeasurementPackage meas_package){
                     0,0,0,1,0,
                     0,0,0,0,1;
         }
+
+        EKFRTSStepData init_step;
+        init_step.timestamp = time_us_;
+        init_step.is_initialization = true;
+        init_step.x_filtered = x_;
+        init_step.P_filtered = P_;
+        init_step.x_predicted = x_;
+        init_step.P_predicted = P_;
+        init_step.F_jacobian = MatrixXd::Identity(5, 5);
+        step_history_.push_back(init_step);
         return; // Exit after initialization - don't predict or update yet
     }
 
@@ -186,6 +208,16 @@ void EKF::ProcessMeasurument(MeasurementPackage meas_package){
     }else if (meas_package.sensor_type_ == MeasurementPackage::RADAR){
         UpdateRadar(meas_package);  // Nonlinear update using radar measurement
     }
+
+    EKFRTSStepData step;
+    step.timestamp = meas_package.timestamp_;
+    step.is_initialization = false;
+    step.x_filtered = x_;
+    step.P_filtered = P_;
+    step.x_predicted = last_x_pred_;
+    step.P_predicted = last_P_pred_;
+    step.F_jacobian = last_F_jacobian_;
+    step_history_.push_back(step);
 
 }
 
@@ -219,6 +251,7 @@ void EKF::Prediction(double dt) {
 
   x_ = x_pred;
   NormalizeAngle(x_(3));
+  last_x_pred_ = x_;
 
   // 2) Build process Jacobian Fj = df/dx
   MatrixXd Fj = MatrixXd::Identity(5, 5);
@@ -268,6 +301,8 @@ void EKF::Prediction(double dt) {
 
   //4) Predict covariance
   P_ = Fj * P_ * Fj.transpose() + Q_;
+  last_P_pred_ = P_;
+  last_F_jacobian_ = Fj;
 }
 
 void EKF::UpdateLidar(const MeasurementPackage& meas_package){

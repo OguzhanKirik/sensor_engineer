@@ -8,6 +8,15 @@
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 
+struct EKFRTSStepData {
+    long long timestamp = 0;
+    bool is_initialization = false;
+    VectorXd x_filtered;
+    MatrixXd P_filtered;
+    VectorXd x_predicted;
+    MatrixXd P_predicted;
+    MatrixXd F_jacobian;
+};
 
 class EKF{
     public:
@@ -28,6 +37,12 @@ class EKF{
         
         // State covariance matrix
         MatrixXd P_;
+
+        // Clear cached forward-pass history used by offline smoothers.
+        void ClearStepHistory();
+
+        // Access cached forward-pass history for RTS smoothing.
+        const std::vector<EKFRTSStepData>& GetStepHistory() const;
 
     private:
         // Update state using lidar measurement (linear measurement model)
@@ -93,6 +108,14 @@ class EKF{
 
         // Radar measurement noise standard deviation radius change in m/s
         double std_radrd_ ;
+
+        // Last prediction snapshot used to populate smoother history.
+        VectorXd last_x_pred_;
+        MatrixXd last_P_pred_;
+        MatrixXd last_F_jacobian_;
+
+        // Forward-pass history for offline RTS smoothing.
+        std::vector<EKFRTSStepData> step_history_;
 
 };
 

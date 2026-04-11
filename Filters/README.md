@@ -1,265 +1,157 @@
 # Highway Object Tracking with Advanced Kalman Filters
 
-Multi-model Kalman Filter implementation for highway vehicle tracking using sensor fusion (Lidar + Radar).
+Multi-model Kalman filter implementation for highway vehicle tracking using lidar and radar sensor fusion.
 
 <img src="media/ukf_highway_tracked.gif" width="700" height="400" />
 
-This project implements six different filter approaches:
-- **EKF** (Extended Kalman Filter) - Linear approximation-based tracking
-- **IEKF** (Iterated Extended Kalman Filter) - Iterative refinement for better nonlinearity handling
-- **UKF** (Unscented Kalman Filter) - Sigma points-based nonlinear tracking
-- **CKF** (Cubature Kalman Filter) - Deterministic sampling-based nonlinear tracking
-- **PF** (Particle Filter) - Sequential Monte Carlo tracking with weighted particles
-- **IMM** (Interacting Multiple Model) - Advanced 4-model adaptive filter
+This project currently provides:
+- **EKF**: Extended Kalman Filter
+- **EKF + RTS**: EKF forward pass with offline Rauch-Tung-Striebel smoothing
+- **MHE**: Moving Horizon Estimation scaffold integrated into the highway test harness
+- **IEKF**: Iterated Extended Kalman Filter
+- **UKF**: Unscented Kalman Filter
+- **CKF**: Cubature Kalman Filter
+- **PF**: Particle Filter
+- **IMM**: Interacting Multiple Model filter
 
-The goal is to estimate the state of multiple cars on a highway using noisy lidar and radar measurements with minimal RMSE (Root Mean Square Error).
+The goal is to estimate the state of multiple cars on a highway with low RMSE on position and velocity.
 
 ## Prerequisites
 
-**Eigen Library:**  
-This project requires the Eigen library for linear algebra operations.
+- **Eigen** for linear algebra
+- **PCL 1.2+** for 3D visualization
 
-**PCL (Point Cloud Library):**  
-Version 1.2 or higher for 3D visualization.
+If you are on macOS and have Eigen 5.x installed while PCL expects 3.3, the build includes compatibility wrapper config files.
 
-**macOS Note:**  
-If you have Eigen 5.x installed but PCL requires 3.3, the build system includes wrapper config files to handle version compatibility.
-
-For original sensor data and additional setup instructions, refer to:  
+Original reference project and dataset notes:
 **[https://github.com/udacity/SFND_Unscented_Kalman_Filter](https://github.com/udacity/SFND_Unscented_Kalman_Filter)**
-
----
 
 ## Project Structure
 
-```
+```text
 Filters/
-├── CMakeLists.txt              # Build configuration
-├── README.md                   # This file
+├── CMakeLists.txt
+├── README.md
 ├── src/
-│   ├── filters/                # All filter implementations
-│   │   ├── README.md           # Filter comparison guide
-│   │   ├── ekf/                # Extended Kalman Filter
-│   │   │   ├── ekf.hpp
-│   │   │   └── ekf.cpp
-│   │   ├── iekf/               # Iterated Extended Kalman Filter
-│   │   │   ├── iekf.hpp
-│   │   │   └── iekf.cpp
-│   │   ├── ukf/                # Unscented Kalman Filter
-│   │   │   ├── ukf.h
-│   │   │   └── ukf.cpp
-│   │   ├── ckf/                # Cubature Kalman Filter
-│   │   │   ├── ckf.h
-│   │   │   ├── ckf.cpp
-│   │   │   └── CKF_README.md
-│   │   ├── pf/                 # Particle Filter
-│   │   │   ├── pf.h
-│   │   │   └── pf.cpp
-│   │   └── imm/                # Interacting Multiple Model Filter
-│   │       ├── IMM.hpp
-│   │       ├── IMM.cpp
-│   │       └── IMM_README.md
-│   ├── motion_models/          # Motion models for IMM
-│   │   ├── README.md
-│   │   ├── cv_ekf.h/cpp        # Constant Velocity (EKF)
-│   │   ├── ca_ekf.h/cpp        # Constant Acceleration (EKF)
-│   │   ├── ctrv_ukf.h/cpp      # Constant Turn Rate + Velocity (UKF)
-│   │   └── ctra_ukf.h/cpp      # Constant Turn Rate + Accel (UKF)
-│   ├── render/                 # 3D visualization
-│   ├── sensors/                # Lidar/Radar sensor models
-│   ├── highway.h               # Highway simulation
-│   ├── main.cpp                # Entry point
-│   └── tools.cpp/h             # RMSE calculation
-└── build/                      # Build outputs
-    ├── filters_highway         # Multi-filter executable
-    ├── ekf_highway             # EKF-only executable
-    ├── iekf_highway            # IEKF-only executable
-    ├── ukf_highway             # UKF-only executable
-    ├── ckf_highway             # CKF-only executable
-  ├── pf_highway              # PF-only executable
-    └── imm_highway             # IMM executable
+│   ├── filters/
+│   │   ├── ekf/
+│   │   ├── iekf/
+│   │   ├── ukf/
+│   │   ├── ckf/
+│   │   ├── pf/
+│   │   ├── mhe/
+│   │   ├── rts/
+│   │   └── imm/
+│   ├── motion_models/
+│   ├── render/
+│   ├── sensors/
+│   ├── highway.h
+│   ├── main.cpp
+│   └── tools.cpp
+└── build/
 ```
 
----
+## Executables
 
-## Available Executables
+| Executable | Mode | Notes |
+|-----------|------|-------|
+| `filters_highway` | Multi-filter build | General executable |
+| `ekf_highway` | EKF | Forward EKF only |
+| `ekf_rts_highway` | EKF + RTS | Runs EKF first, then applies offline RTS smoothing |
+| `mhe_highway` | MHE | Uses the current MHE scaffold in the highway pipeline |
+| `iekf_highway` | IEKF | Iterated EKF |
+| `ukf_highway` | UKF | Unscented filter |
+| `ckf_highway` | CKF | Cubature filter |
+| `pf_highway` | PF | Particle filter |
+| `imm_highway` | IMM | 4-model adaptive filter |
 
-The project builds **7 different executables** for testing different filter combinations:
+## Quick Start
 
-### Individual Filter Executables (Recommended for Testing)
-
-| Executable | Filter | Use Case |
-|-----------|--------|----------|
-| **ekf_highway** | EKF only | Test Extended Kalman Filter performance |
-| **iekf_highway** | IEKF only | Test Iterated Extended Kalman Filter performance |
-| **ukf_highway** | UKF only | Test Unscented Kalman Filter performance |
-| **ckf_highway** | CKF only | Test Cubature Kalman Filter performance |
-| **pf_highway** | PF only | Test Particle Filter performance |
-| **imm_highway** | IMM (4-model) | Test advanced adaptive multi-model filter |
-| **filters_highway** | EKF + UKF + CKF | Multi-filter executable (can switch via code) |
-
-**Quick Start:**
 ```bash
 cd build
-./ekf_highway    # Test EKF
-./iekf_highway   # Test IEKF
-./ukf_highway    # Test UKF
-./ckf_highway    # Test CKF
-./pf_highway     # Test PF
-./imm_highway    # Test IMM
+cmake ..
+make
+
+./ekf_highway
+./ekf_rts_highway
+./mhe_highway
+./iekf_highway
+./ukf_highway
+./ckf_highway
+./pf_highway
+./imm_highway
 ```
 
----
+`ekf_rts_highway` is an offline smoothing mode. During the live run, the viewer still shows the forward EKF estimate. After the run ends, the executable applies RTS backward smoothing and prints filtered-vs-smoothed RMSE per tracked car.
+
+`mhe_highway` is currently an integration scaffold, not a full nonlinear moving-horizon optimizer. It participates in the same highway RMSE calculation path, but its estimate is still based on the EKF warm-start maintained inside the `MHE` class until the true windowed optimization backend is implemented.
 
 ## Filter Performance Comparison
 
-Typical RMSE results on the highway scenario:
+Typical relative behavior on the highway scenario:
 
-| Filter | X RMSE | Y RMSE | Vx RMSE | Vy RMSE | Speed | Notes |
-|--------|--------|--------|---------|---------|-------|-------|
-| **EKF** | 0.039 m | 0.165 m | 0.684 m/s | 0.474 m/s | Very Fast ⚡ | Linear approximation, good for straight roads |
-| **IEKF** | 0.035 m | 0.152 m | 0.621 m/s | 0.438 m/s | Fast | Iterated refinement improves EKF accuracy |
-| **UKF** | 0.039 m | 0.191 m | 0.684 m/s | 0.614 m/s | Fast | Better with turns, handles nonlinearity better |
-| **CKF** | 0.101 m | 0.329 m | 0.684 m/s | 0.573 m/s | Fast | Deterministic sampling, alternative to UKF |
-| **PF** | 0.27 m (0s) | 0.18 m (0s) | 3.54 m/s (0s) | 0.49 m/s (0s) | Slow | Baseline tuned PF; useful for comparison but needs more tuning |
-| **IMM** | ~0.03 m | ~0.12 m | ~0.35 m/s | ~0.45 m/s | Slower 🔄 | Adaptive multi-model, best overall |
+| Filter | Accuracy | Runtime | Notes |
+|--------|----------|---------|-------|
+| **EKF** | Medium | Very fast | Simple and efficient |
+| **EKF + RTS** | Better than EKF offline | Forward pass + backward pass | Not causal, post-run only |
+| **MHE** | Currently similar to EKF warm-start | Moderate | Solver not implemented yet |
+| **IEKF** | Medium-Good | Very fast | Better radar linearization than EKF |
+| **UKF** | Good | Fast | Better nonlinear handling |
+| **CKF** | Good | Fast | UKF-like accuracy without sigma-point tuning |
+| **PF** | Variable | Slow | More tuning-sensitive |
+| **IMM** | Best overall in mixed motion | Slower | Best for varying motion patterns |
 
----
+## IEKF (Iterated Extended Kalman Filter)
 
-## Filter Selection Recommendations
+### What is IEKF?
 
-### Single-Model Filters (EKF, UKF, CKF)
+IEKF extends the standard EKF by iteratively refining the state estimate during the measurement update step. While EKF linearizes the measurement function once at the predicted state, IEKF relinearizes multiple times at progressively better state estimates.
 
-**Choose based on motion type and requirements:**
+### How It Works
 
-| Filter | Best For | Accuracy | Speed |
-|--------|----------|----------|-------|
-| **EKF** | Straight lines, simple motion | Medium | Very Fast |
-| **UKF** | Turns, nonlinear motion | Good | Fast |
-| **CKF** | Turns, nonlinear motion | Good | Fast |
+**Standard EKF Update:**
+1. Linearize measurement model at predicted state: `H = ∂h/∂x|x_pred`
+2. Compute Kalman gain: `K = P*H'*(H*P*H' + R)^-1`
+3. Update state once: `x = x_pred + K*(z - h(x_pred))`
 
+**IEKF Update (Iterative Refinement):**
+1. Start with predicted state: `x = x_pred`
+2. **For iteration 1 to max_iterations:**
+   - Linearize at **current** estimate: `H = ∂h/∂x|x_current`
+   - Compute innovation: `y = z - h(x_current)`
+   - Compute Kalman gain: `K = P_prior*H'*(H*P_prior*H' + R)^-1`
+   - Update state from **prior**: `x = x_prior + K*y`
+   - Check convergence: if `||x_new - x_old|| < threshold`, stop
+3. Update covariance once with final H and K
+
+### Key Parameters
+
+- **max_iterations = 3**: Maximum number of refinement iterations
+- **convergence_threshold = 1e-5**: Early stopping if state change is small
+- Applied **only to radar updates** (nonlinear measurement model)
+- Lidar updates use standard linear Kalman update
+
+### When to Use IEKF
+
+**Advantages:**
+- ✅ Better handling of highly nonlinear radar measurements
+- ✅ Minimal computational overhead (typically 1-3 iterations)
+- ✅ Often converges in 1-2 iterations
+- ✅ Same speed as EKF in practice
+
+**Use IEKF when:**
+- Radar measurements dominate your sensor suite
+- You want better accuracy than EKF without UKF complexity
+- Measurement model is highly nonlinear (range, bearing, range-rate)
+
+**Stick with standard EKF when:**
+- Lidar measurements dominate
+- Motion is nearly linear
+- Computational resources are extremely limited
 **EKF vs UKF vs CKF Implementation Details:**
 - **EKF**: Uses first-order Taylor expansion (Jacobian). Fastest but assumes near-linearity.
 - **UKF**: Uses unscented transform with 2n+1 sigma points. Better nonlinearity handling.
 - **CKF**: Uses cubature rule with 2n sigma points. Similar to UKF but with equal weights.
-
-## Iterated Extended Kalman Filter (IEKF)
-
-### What is IEKF?
-
-The **Iterated Extended Kalman Filter** is an enhancement to the standard EKF that performs **multiple measurement update iterations** within a single update step. This iterative refinement improves accuracy for nonlinear measurement models.
-
-**Key Principle:** Instead of linearizing the measurement function at the *prior* state (as in standard EKF), IEKF linearizes at the *current estimate* and repeats the update step, converging to a better estimate.
-
-### How IEKF Works
-
-```
-Standard EKF (1 iteration per measurement):
-  x_predicted ──→ Jacobian ──→ Update ──→ x_updated
-                  (at x_predicted)
-
-IEKF (multiple iterations):
-  x_predicted ──→ Iteration 1 ──┐
-                  Jacobian       │
-                  (at x_predicted)│
-                  Update         ├──→ Iteration 2 ──┐
-                                 │                   │
-                                 └─ x_1 (updated)   │
-                                                    ├──→ ... ──→ Converged x
-                                 Jacobian           │
-                                 (at x_1)           │
-                                 Update ────────────┘
-                                 (refined)
-```
-
-### Performance Characteristics
-
-| Aspect | IEKF vs EKF |
-|--------|------------|
-| **Accuracy** | 5-20% better RMSE (especially for nonlinear measurements) |
-| **Speed** | 2-4× slower (multiple iterations) |
-| **Convergence** | Fast (usually 2-3 iterations) |
-| **Nonlinearity Handling** | Better than EKF, still not as good as UKF |
-
-### Current IEKF Tuning (from `src/filters/iekf/iekf.cpp`)
-
-| Parameter | Value | Purpose |
-|-----------|-------|---------|
-| `max_iterations_` | 3 | Maximum iterations per measurement update |
-| `convergence_threshold_` | 1e-5 | Stop if state change < this value |
-| `std_a_` | 2.0 | Process noise (acceleration) |
-| `std_yawdd_` | 0.6 | Process noise (yaw acceleration) |
-
-### When to Use IEKF
-
-**Choose IEKF when:**
-- ✅ You need **better accuracy than EKF** but value **speed over super-high accuracy**
-- ✅ Measurement model is **moderately nonlinear** (e.g., range/bearing from radar)
-- ✅ **Computational budget** allows 2-4× overhead vs EKF
-- ✅ **Not** suitable for **highly nonlinear** systems (use UKF/CKF instead)
-
-**IEKF vs alternatives:**
-
-| Scenario | Recommendation |
-|----------|-----------------|
-| Need **fastest** tracking on straight road | EKF |
-| Want **better EKF** with small overhead | **IEKF** ← Consider |
-| Need **strong nonlinearity handling** | UKF or CKF |
-| Want **best overall** with adaptation | IMM |
-
-### Technical Details
-
-**IEKF Update Step (Pseudocode):**
-
-```cpp
-// Save prior from last timestep
-x_prior = x_;
-P_prior = P_;
-
-// Iterate the update
-for (int i = 0; i < max_iterations_; i++) {
-    // Linearize at CURRENT estimate (key difference from EKF)
-    H = ComputeJacobian(x_);
-    
-    // Measure innovation
-    z_predicted = h(x_);  // Nonlinear measurement function
-    y = z_measured - z_predicted;
-    
-    // Standard Kalman update
-    S = H * P_prior * H^T + R;
-    K = P_prior * H^T * S^{-1};
-    
-    // Update using prior covariance
-    x_prev = x_;
-    x_ = x_prior + K * y;
-    P_ = (I - K*H) * P_prior;
-    
-    // Check convergence
-    if (||x_ - x_prev|| < convergence_threshold_)
-        break;
-}
-```
-
-**Why iterate with `P_prior`?**
-
-To ensure **mathematical consistency**, the covariance is updated using the **prior covariance** throughout all iterations (not the refined covariance). This maintains the statistical guarantees of the update equations while linearizing at a better point.
-
-### Example Results
-
-On highway scenario (3-car tracking with Lidar + Radar):
-
-```
-Metric          | EKF    | IEKF   | UKF    | CKF
------------------+--------+--------+--------+-------
-Position (m)    | 0.039  | 0.035  | 0.039  | 0.101
-Velocity (m/s)  | 0.579  | 0.530  | 0.649  | 0.629
-Speed (updates/s)| 4200  | 1200   | 800    | 900
-Iterations (avg) |  1    |  2.4   |  N/A   | N/A
-```
-
-IEKF provides a nice **accuracy boost** with **reasonable speed trade-off**.
-
-
 
 ## Particle Filter Tuning Parameters
 

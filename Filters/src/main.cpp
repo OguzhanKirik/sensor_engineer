@@ -40,4 +40,6 @@ int main(int argc, char** argv)
 		
 	}
 
+	highway.reportRTSResults();
+
 }

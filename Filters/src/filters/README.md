@@ -1,6 +1,6 @@
 # Filters Directory
 
-This directory contains multiple Kalman filter implementations for object tracking.
+This directory contains multiple Kalman filter implementations for object tracking, plus an offline RTS smoother built on top of the EKF forward pass.
 
 ## Directory Structure
 
@@ -22,6 +22,9 @@ filters/
 ├── pf/                     - Particle Filter
 │   ├── pf.h
 │   └── pf.cpp
+├── rts/                    - Rauch-Tung-Striebel smoother
+│   ├── ekf_rts_smoother.h
+│   └── ekf_rts_smoother.cpp
 └── imm/                    - Interacting Multiple Model Filter
    ├── IMM.hpp
     ├── IMM.cpp
@@ -82,7 +85,18 @@ filters/
 
 See [ckf/CKF_README.md](ckf/CKF_README.md) for detailed CKF documentation.
 
-### 5. IMM (Interacting Multiple Model Filter)
+### 5. EKF + RTS Smoother
+**Location**: `rts/`
+
+- **Type**: Two-pass smoother on top of EKF
+- **Forward Model**: EKF with CTRV motion model
+- **Best For**: Offline trajectory refinement after a full measurement sequence
+- **Complexity**: Medium
+- **Performance**: Usually improves trajectory consistency and post-run RMSE relative to EKF alone
+
+**Important**: RTS is not a real-time causal estimator. It runs EKF forward first, then performs a backward correction pass using future measurements to refine earlier states.
+
+### 6. IMM (Interacting Multiple Model Filter)
 **Location**: `imm/`
 
 - **Type**: Multi-model adaptive filter
@@ -101,6 +115,7 @@ See [imm/IMM_README.md](imm/IMM_README.md) for detailed IMM documentation.
 | Filter | RMSE | Computation | Scenarios | Adaptability | Tuning Needed |
 |--------|------|-------------|-----------|--------------|---------------|
 | **EKF** | Higher | Lowest | Simple | None | Low |
+| **EKF + RTS** | Lower than EKF | Low forward + offline backward pass | Offline evaluation | None | Low |
 | **IEKF** | Medium | Low | Simple-Medium | None | Low |
 | **UKF** | Medium | Medium | Standard | None | Medium (α,β,κ) |
 | **CKF** | Medium | Medium | Standard | None | **None** |
@@ -116,6 +131,9 @@ The filter choice is controlled in `highway.h`:
 // Use EKF instead of UKF (false = UKF, true = EKF)
 bool use_ekf = true;  // Set to false for UKF
 
+// Run offline RTS smoothing after the EKF simulation ends
+bool use_ekf_rts = false; // Enabled by ekf_rts_highway
+
 // Use IEKF (Iterated Extended Kalman Filter)
 bool use_iekf = false; // Set to true for IEKF
 
@@ -123,8 +141,7 @@ bool use_iekf = false; // Set to true for IEKF
 bool use_ckf = false; // Set to true for CKF
 ```
 
-**Note**: Filter flags have precedence order: `use_pf` > `use_ckf` > `use_iekf` > `use_ekf` > UKF (default).
-```
+**Note**: RTS smoothing is only enabled in the dedicated `ekf_rts_highway` executable. It is an offline backward pass after the forward EKF run completes.
 
 ### Building
 
@@ -139,6 +156,9 @@ make
 
 # Run Extended Kalman Filter
 ./ekf_highway
+
+# Run EKF + RTS smoother
+./ekf_rts_highway
 
 # Run Iterated Extended Kalman Filter
 ./iekf_highway
@@ -162,6 +182,12 @@ make
 - ✅ Computational resources are very limited
 - ✅ Motion is relatively smooth and predictable
 - ✅ Quick prototyping is needed
+
+### Use EKF + RTS when:
+- ✅ You can process the full measurement sequence offline
+- ✅ You want backward correction of earlier EKF estimates
+- ✅ You care about post-run trajectory quality and RMSE
+- ✅ Real-time output is not required
 
 ### Use IEKF when:
 - ✅ You want better accuracy than EKF without jumping to UKF
@@ -219,21 +245,23 @@ To add a new filter:
 4. Update render/render.h if needed
 5. Add documentation
 
-## Future Implementation: RTS Smoother
+## RTS Smoother
 
 ### Rauch-Tung-Striebel (RTS) Smoother
 
-The **RTS smoother** is fundamentally different from filters - it's a **backward smoothing algorithm** that processes data in two passes:
+The **RTS smoother** is fundamentally different from filters. It is a **backward smoothing algorithm** that processes data in two passes.
 
 **Key Differences from Filters:**
 - **Filters**: Process data **forward in time** (causal), providing estimates up to the current time
 - **Smoothers**: Process data **backward in time** (non-causal), providing estimates for all past states using all available data
 
-**How RTS Smoother Works:**
+**How the current EKF RTS smoother works:**
 
-1. **Forward Pass** (Standard Kalman Filter):
-   - Run any Kalman filter (EKF, UKF, CKF) forward through all measurements
-   - Store predicted states `x_pred[k]`, filtered states `x_filtered[k]`, and covariances `P[k]` for each timestep
+1. **Forward Pass**:
+   - Run EKF forward through all measurements
+   - Store filtered states `x_filtered[k]`, filtered covariances `P_filtered[k]`
+   - Store one-step predictions `x_pred[k+1]`, `P_pred[k+1]`
+   - Store the EKF process Jacobian `F[k]`
 
 2. **Backward Pass** (Smoothing):
    - Start from the last timestep and work backward
@@ -247,28 +275,6 @@ The **RTS smoother** is fundamentally different from filters - it's a **backward
      P_smooth[k] = P_filtered[k] + C[k] * (P_smooth[k+1] - P_pred[k+1]) * C[k]^T
      ```
 
-**Implementation Strategy:**
-
-```cpp
-class RTSSmoother {
-    // Store forward pass results
-    std::vector<VectorXd> x_filtered_;
-    std::vector<VectorXd> x_predicted_;
-    std::vector<MatrixXd> P_filtered_;
-    std::vector<MatrixXd> P_predicted_;
-    std::vector<MatrixXd> F_;  // State transition matrices
-    
-    // Forward pass - run filter and store results
-    void ForwardPass(std::vector<MeasurementPackage>& measurements);
-    
-    // Backward pass - compute smoothed estimates
-    void BackwardPass();
-    
-    // Get smoothed trajectory
-    std::vector<VectorXd> GetSmoothedTrajectory();
-};
-```
-
 **Use Cases:**
 - ✅ **Offline processing**: When you have all data and can process backward
 - ✅ **Trajectory reconstruction**: Post-processing recorded sensor data
@@ -281,24 +287,20 @@ class RTSSmoother {
 - ❌ **Memory intensive**: Must store all forward pass results
 - ❌ **Latency**: Cannot provide estimates until entire sequence is processed
 
-**Integration with Current Codebase:**
+**Current Integration:**
+- `filters/rts/ekf_rts_smoother.*` implements the backward pass
+- `ekf_rts_highway` enables EKF forward tracking plus post-run RTS smoothing
+- `highway.h` prints per-car filtered RMSE and smoothed RMSE after the run completes
 
-Can be implemented on top of any existing filter:
-- **EKF-based RTS**: Use EKF for forward pass, RTS for backward smoothing
-- **UKF-based RTS**: Use UKF for forward pass (better for nonlinear systems)
-- **CKF-based RTS**: Use CKF for forward pass (parameter-free smoothing)
+**Current Limitation:**
+- the PCL viewer still shows the forward EKF during the live run
+- the smoothed trajectory is currently reported after the sequence ends
 
-**Recommended Next Steps:**
-1. Create `filters/rts/` directory
-2. Implement generic RTS class that wraps any forward filter (EKF/UKF/CKF)
-3. Add offline data processing mode to `highway.h`
-4. Store full trajectory during simulation
-5. Run backward pass and visualize comparison: filtered vs. smoothed
-
-**Expected Performance:**
-- Smoothed RMSE typically **20-40% better** than forward filter alone
-- Better state estimates for trajectory points in the middle (uses past + future data)
-- Initial and final points see less improvement (less future/past data available)
+**Likely Next Steps:**
+1. Replay the smoothed trajectory in the viewer after the forward run
+2. Add a fixed-lag smoother for delayed online visualization
+3. Add UKF-based RTS using sigma-point cross-covariance
+4. Add CKF-based smoothing
 
 ## References
 
