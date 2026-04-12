@@ -1,51 +1,108 @@
 # MHE
 
-## Theory
+## What The Algorithm Is
 
-Moving Horizon Estimation solves a sliding-window optimization problem rather than performing a purely recursive Bayesian update. Instead of keeping only the latest state, it optimizes over a recent state trajectory subject to:
+Moving Horizon Estimation is a sliding-window optimization method. Instead of updating only the latest state recursively, it solves for the best recent trajectory over a finite horizon.
 
-- process-model residuals
-- measurement residuals
-- arrival-cost terms that summarize information before the window
-- optional state or input constraints
+A generic MHE problem minimizes something like:
 
-MHE is attractive when:
+- arrival cost from information before the horizon
+- process residual cost over the horizon
+- measurement residual cost over the horizon
+- optional robust penalties or hard constraints
 
-- nonlinearities are strong
-- constraints matter
-- robust cost functions are desired
-- smoothing over a recent window is acceptable
+So unlike EKF/UKF, MHE is not primarily a closed-form recursive estimator. It is an optimization problem solved repeatedly.
 
-## This Implementation
+## Why It Is Interesting
+
+MHE is attractive because it can naturally handle:
+
+- nonlinear process models
+- nonlinear measurement models
+- explicit state constraints
+- actuator constraints
+- robust losses for outliers
+- smoothing over a recent window
+
+In many practical systems, MHE is conceptually closer to online optimization than to classic Kalman filtering.
+
+## Typical Formulation
+
+Over a horizon of states `x_0 ... x_N`, MHE usually solves for the sequence that minimizes:
+
+1. deviation from an arrival prior at the start of the window
+2. process-model residuals between successive states
+3. measurement residuals at each node
+
+The latest state in that optimized window becomes the current estimate.
+
+That means MHE is:
+
+- not fully offline like RTS over a full sequence
+- not purely causal like EKF
+- a bounded-horizon optimization-based estimator
+
+## This Repo's Current Status
 
 Files:
 
 - `mhe.h`
 - `mhe.cpp`
 
-Current status in this repo:
+This repo does not yet contain a true solver-backed MHE.
 
-- This is a scaffold, not a full nonlinear MHE solver.
-- The class maintains:
-  - a measurement window
-  - arrival-cost placeholders
-  - per-node warm-start state/covariance
-- An embedded EKF currently supplies those warm starts.
-- `Solve()` currently returns the latest EKF warm-start result instead of solving an optimization problem.
+What exists:
 
-What is already in place:
+- horizon management with a deque of `MHENode`
+- per-node measurement storage
+- arrival-cost placeholders
+- `SetWindowSize()`
+- `SetArrivalCost()`
+- `Reset()`
+- integration into the highway harness and RMSE logic
 
-- horizon management
-- reset and arrival-cost APIs
-- integration into the highway harness and RMSE pipeline
+How the current estimate is produced:
 
-What is missing for true MHE:
+- the class embeds an EKF as a warm-start generator
+- every incoming measurement is first processed by that EKF
+- the warm-start state/covariance is stored with the node
+- `Solve()` currently returns the latest warm-start result
 
-- explicit decision variables for the window state sequence
-- process and measurement residual construction
-- nonlinear least-squares backend
-- convergence and constraint handling
+So this module is best understood as:
 
-Practical note:
+- interface scaffold
+- data-structure scaffold
+- integration scaffold
 
-- This module is useful today for integration and interface work, but not yet for meaningful MHE performance comparisons.
+not yet as a finished MHE algorithm
+
+## What A Full Version Would Need
+
+To become a real MHE, this module would need:
+
+- explicit window decision variables
+- process residual construction for CTRV dynamics
+- lidar and radar residual terms
+- arrival cost weighting
+- a nonlinear least-squares backend
+- solver iteration and convergence control
+- optional robust loss or constraints
+
+Likely solver choices would be:
+
+- Ceres
+- CasADi
+- IPOPT
+
+depending on how much symbolic modeling or constraint support is desired.
+
+## Why Keep It Anyway
+
+Even as a scaffold, it is useful because it already defines:
+
+- the estimator interface
+- the window bookkeeping
+- where a future solver would plug in
+- how MHE outputs would be evaluated in the highway harness
+
+That lowers the cost of implementing the true method later.

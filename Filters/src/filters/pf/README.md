@@ -1,17 +1,57 @@
 # Particle Filter
 
-## Theory
+## What The Algorithm Is
 
-A Particle Filter represents the posterior distribution with a weighted set of random samples instead of a single Gaussian. This is useful when the posterior can become non-Gaussian or multimodal.
+A Particle Filter represents the posterior distribution with a set of weighted samples:
 
-Typical particle-filter cycle:
+- each particle is one hypothetical state
+- its weight says how plausible that state is under the latest data
 
-1. Sample particles from a proposal distribution.
-2. Propagate particles through the process model.
-3. Score each particle under the measurement likelihood.
-4. Normalize weights.
-5. Resample when degeneracy becomes severe.
-6. Estimate the output state from the weighted particle set.
+Unlike EKF, UKF, and CKF, a particle filter does not require the posterior to remain Gaussian. That makes it attractive for:
+
+- nonlinear systems
+- non-Gaussian noise
+- ambiguous or multimodal belief states
+
+## Core Cycle
+
+The bootstrap particle filter used here follows this pattern:
+
+1. Initialize particles around the first observation.
+2. Propagate each particle through the motion model with sampled noise.
+3. Evaluate measurement likelihood for each particle.
+4. Multiply old weights by the new likelihoods.
+5. Normalize weights.
+6. Resample if particle degeneracy becomes severe.
+7. Extract a state estimate from the weighted particle cloud.
+
+This is fundamentally different from Kalman-style filters:
+
+- no single mean/covariance is propagated as the internal belief
+- the distribution is represented by the cloud itself
+
+## Why It Matters In This Repo
+
+The highway scenario is still simple enough that Gaussian filters work reasonably well, but PF is useful as a conceptually different estimator:
+
+- it does not linearize
+- it does not assume a Gaussian posterior
+- it can tolerate more nonlinear behavior if enough particles are used
+
+## This Repo's Setup
+
+State:
+
+`[px, py, v, yaw, yaw_rate]`
+
+Process model:
+
+- CTRV-like propagation with sampled process noise
+
+Measurements:
+
+- lidar likelihood in Cartesian space
+- radar likelihood in polar space
 
 ## This Implementation
 
@@ -20,16 +60,41 @@ Files:
 - `pf.h`
 - `pf.cpp`
 
-Implementation choices in this repo:
+Implementation details:
 
-- State is `[px, py, v, yaw, yaw_rate]`.
-- Propagation uses a CTRV motion prior with sampled acceleration and yaw-acceleration noise.
-- Lidar and radar updates are implemented as direct likelihood multipliers on each particle.
-- Degeneracy is monitored via effective sample size.
-- Systematic resampling is used when the particle set collapses.
-- A small roughening step is applied after resampling to reduce sample impoverishment.
-- The exported estimate `x_` is the weighted particle mean, with yaw averaged on the unit circle.
+- `n_particles_ = 1200`
+- particles are initialized around the first measurement with broad random spread
+- propagation samples:
+  - longitudinal acceleration noise
+  - yaw-acceleration noise
+- lidar update multiplies each weight by a 2D Gaussian likelihood in `(px, py)`
+- radar update multiplies each weight by a Gaussian likelihood in `(rho, phi, rho_dot)`
+- `EffectiveSampleSize()` monitors degeneracy
+- `ResampleSystematic()` performs low-variance systematic resampling
+- a small roughening step is added after resampling
+- `ComputeStateMean()` exports the weighted mean, with yaw averaged on the circle
 
-Practical note:
+This is a practical bootstrap PF, not a highly specialized proposal-distribution design.
 
-- This is a bootstrap-style particle filter, not a Rao-Blackwellized or map-based variant.
+## Strengths
+
+- handles non-Gaussian belief states better than Kalman-family methods
+- no Jacobians required
+- conceptually robust to strong nonlinearities
+- good educational contrast against EKF/UKF/CKF
+
+## Weaknesses
+
+- more expensive than Gaussian filters
+- quality depends strongly on particle count
+- can suffer sample impoverishment
+- resampling design matters
+- this repo’s PF is still fairly simple and not tuned for extreme ambiguity
+
+## When To Prefer PF Here
+
+Use PF in this repo when:
+
+- you want to compare Gaussian and non-Gaussian estimators
+- you expect nonlinear behavior that may not stay well approximated by one Gaussian
+- you accept higher compute cost in exchange for distributional flexibility
