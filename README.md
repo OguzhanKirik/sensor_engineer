@@ -1,229 +1,168 @@
-# Sensor Fusion Engineer Projects
+# Sensor Fusion Workspace
 
-A comprehensive collection of sensor fusion, computer vision, and object tracking implementations for autonomous systems.
+This workspace contains two main C++ estimation projects:
 
-## 📁 Repository Structure
+- `QuadrotorStateEstimation`
+- `SensorFusion-ObjectTracking`
 
-### 🎥 Camera
-Camera-based perception projects including feature detection, tracking, and 3D object tracking.
+It also includes domain folders for related sensor-fusion work:
 
-- **Camera-Exercises**: Fundamental camera calibration and computer vision exercises
-- **SFND_2D_Feature_Matching**: 2D feature detection and matching implementation
-- **SFND_3D_Object_Tracking**: 3D object tracking using camera data and lidar fusion
+- `Camera`
+- `Lidar`
+- `Radar`
 
-### 📊 Kalman Filters
+These parts of the workspace cover different sensor modalities and project types, so they should be read as separate areas rather than one single build target.
 
-#### KalmanFillter
-Basic Kalman filter implementations and exercises for state estimation.
+## Workspace Structure
 
-#### Filters (UKF/EKF Highway Project)
-Advanced Kalman filter implementations for highway vehicle tracking:
-- **Extended Kalman Filter (EKF)**: Linear approximation-based filtering
-- **Unscented Kalman Filter (UKF)**: Sigma point-based filtering for non-linear systems
-- **Sensor Fusion**: Combines radar and lidar measurements
-- **Real-time Tracking**: Multi-vehicle highway scenario with visualization
-
-**Features:**
-- CTRV (Constant Turn Rate and Velocity) motion model
-- Radar and Lidar sensor fusion
-- RMSE-based performance evaluation
-- PCL-based 3D visualization
-
-See [Filters/README.md](Filters/README.md) for detailed setup and build instructions.
-
-### 📡 Radar
-Radar signal processing and target detection implementations.
-
-### 🔦 Lidar
-Lidar point cloud processing, clustering, and object detection projects.
-
-## 🛠️ Prerequisites
-
-### General Dependencies
-- **CMake** >= 3.5
-- **Make** >= 4.1 (Linux, Mac), 3.81 (Windows)
-- **GCC/G++** >= 5.4
-- **C++11** or higher
-
-### Library Dependencies
-- **Eigen3**: Linear algebra library
-- **PCL** (Point Cloud Library): For lidar processing and 3D visualization
-- **OpenCV**: For camera-based projects
-
-### Installation (macOS)
-```bash
-# Install build tools
-xcode-select --install
-
-# Install dependencies via Homebrew
-brew install cmake
-brew install eigen
-brew install pcl
-brew install opencv
+```text
+.
+├── Camera/
+├── Lidar/
+├── QuadrotorStateEstimation/
+├── Radar/
+├── SensorFusion-ObjectTracking/
+└── README.md
 ```
 
-### Installation (Linux - Ubuntu/Debian)
+Local-only note:
+- `QuadrotorStateEstimation.git-backup/` is not part of the workspace structure. It is only a local backup of the old nested `.git` directory and should be removed when no longer needed.
+
+## QuadrotorStateEstimation
+
+`QuadrotorStateEstimation` is a quadrotor state estimation simulator project based on a partially implemented EKF pipeline.
+
+It focuses on:
+- IMU-based attitude estimation
+- EKF prediction for position, velocity, and yaw
+- magnetometer yaw correction
+- GPS position and velocity correction
+- covariance tuning and estimator consistency checks in simulation
+
+The simulator provides ground truth, which makes it useful for:
+- validating estimator accuracy
+- checking sigma consistency against true error
+- tuning process and measurement noise
+- understanding the full predict/update flow of an EKF in a controlled environment
+
+The project is organized around simulation scenarios, especially:
+- `06_SensorNoise`
+- `07_AttitudeEstimation`
+- `08_PredictState`
+- `09_PredictCovariance`
+- `10_MagUpdate`
+- `11_GPSUpdate`
+
+Build pattern:
+
 ```bash
-sudo apt-get update
-sudo apt-get install cmake build-essential
-sudo apt-get install libeigen3-dev
-sudo apt-get install libpcl-dev
-sudo apt-get install libopencv-dev
-```
-
-## 🚀 Quick Start
-
-Each project contains its own build instructions. General build pattern:
-
-```bash
-# Navigate to project directory
-cd <project-name>
-
-# Create build directory
-mkdir build && cd build
-
-# Configure and build
+cd QuadrotorStateEstimation
+mkdir -p build
+cd build
 cmake ..
-make
-
-# Run executable
-./<executable-name>
+cmake --build . -j2
+./CPPEstSim
 ```
 
-## 📚 Project Details
+Notes:
+- This project uses Qt5, OpenGL, and GLUT.
+- On macOS, you may need to pass `CMAKE_PREFIX_PATH` so CMake can find `qt@5`.
 
-### Filters (UKF/EKF)
-Multi-object tracking on a highway using sensor fusion:
+Project documentation:
+- [QuadrotorStateEstimation/README.md](/Users/oguz/Desktop/workspace_cpp/Filters/QuadrotorStateEstimation/README.md)
+
+## SensorFusion-ObjectTracking
+
+`SensorFusion-ObjectTracking` is a lidar/radar highway object-tracking project for benchmarking classical filters and smoothers.
+
+It includes:
+- EKF
+- IEKF
+- UKF
+- CKF
+- PF
+- IMM
+- RTS smoothing
+- fixed-lag smoothing
+- an MHE scaffold integrated into the same highway test harness
+
+The focus here is:
+- object tracking rather than robot localization
+- comparing estimators under the same simulated highway scenario
+- RMSE-based evaluation for tracked vehicle states
+
+Build pattern:
+
 ```bash
-cd Filters/build
-./ukf_highway    # UKF implementation
-./filters_highway # EKF implementation
+cd SensorFusion-ObjectTracking/build
+cmake ..
+cmake --build . -j2
+./ukf_highway
 ```
 
-### Camera Projects
-Feature detection, matching, and 3D object tracking:
-```bash
-cd Camera/SFND_2D_Feature_Matching/build
-make
-./2D_feature_tracking
-```
+Project documentation:
+- [SensorFusion-ObjectTracking/README.md](/Users/oguz/Desktop/workspace_cpp/Filters/SensorFusion-ObjectTracking/README.md)
 
-## 📖 Learning Resources
+## Camera
 
-This repository contains implementations from:
-- Sensor Fusion Nanodegree projects
-- Computer Vision fundamentals
-- Kalman Filtering techniques
-- Point Cloud Processing
+`Camera` contains camera-based perception and computer-vision projects.
 
-## 🎯 Key Concepts Covered
+Typical work in this area includes:
+- feature detection and matching
+- image-based tracking
+- 3D object tracking with camera data
+- calibration and perception exercises
 
-- **State Estimation**: EKF, UKF, Particle Filters
-- **Sensor Fusion**: Combining lidar, radar, and camera data
-- **Object Tracking**: Multi-object tracking and data association
-- **Feature Detection**: SIFT, SURF, ORB, FAST, BRIEF
-- **Point Cloud Processing**: Segmentation, clustering, filtering
-- **Motion Models**: CTRV, CV, CA models
+This folder is the right place to look if you want vision-focused pipelines rather than state-estimation-only code.
 
-## 📝 Code Style
+## Lidar
 
-Projects follow [Google's C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+`Lidar` contains lidar-focused perception work.
 
-## 🔗 Original Sources
+Typical work in this area includes:
+- point cloud filtering
+- segmentation
+- clustering
+- obstacle detection
+- geometric processing on 3D lidar data
 
-Some projects are based on Udacity's Sensor Fusion Nanodegree:
-- [SFND_Unscented_Kalman_Filter](https://github.com/udacity/SFND_Unscented_Kalman_Filter)
+This folder is primarily about perception from point clouds rather than recursive state estimation.
 
-## 📄 License
+## Radar
 
-Individual projects may have their own licenses. Please check each project directory.
+`Radar` contains radar-related signal processing and detection work.
 
-## 👤 Author
+Typical work in this area includes:
+- radar measurement interpretation
+- target detection concepts
+- radar-specific processing pipelines
 
-Oguzhan Kirik - [GitHub](https://github.com/OguzhanKirik)
+This folder is the radar-specific side of the workspace, separate from the lidar/radar object-tracking benchmark in `SensorFusion-ObjectTracking`.
 
----
+## Choosing The Right Project
 
-**Note**: For specific project setup and detailed instructions, refer to the README.md file in each project directory.
-# SFND_Unscented_Kalman_Filter
-Sensor Fusion UKF Highway Project Starter Code
+Use `QuadrotorStateEstimation` if you want:
+- IMU/GPS/magnetometer fusion
+- a state-estimation workflow with known simulator ground truth
+- EKF prediction/update debugging on a flying vehicle
 
-<img src="media/ukf_highway_tracked.gif" width="700" height="400" />
+Use `SensorFusion-ObjectTracking` if you want:
+- lidar/radar target tracking
+- multiple classical filters in one benchmark
+- smoothing methods such as RTS and fixed-lag on tracked-object trajectories
 
-In this project you will implement an Unscented Kalman Filter to estimate the state of multiple cars on a highway using noisy lidar and radar measurements. Passing the project requires obtaining RMSE values that are lower that the tolerance outlined in the project rubric.
+Use `Camera`, `Lidar`, or `Radar` if you want:
+- modality-specific perception exercises
+- preprocessing and detection pipelines tied to one sensor type
+- supporting perception projects outside the two main estimation benchmarks
 
-## Prerequisites
+## Dependencies
 
-**Eigen Library and Sensor Data:**  
-This project requires the Eigen library and sensor data. Please refer to the original Udacity repository for setup instructions and data files:  
-**[https://github.com/udacity/SFND_Unscented_Kalman_Filter](https://github.com/udacity/SFND_Unscented_Kalman_Filter)** 
+Common dependencies across the workspace:
+- CMake
+- a modern C++ compiler
+- Eigen
 
-The main program can be built and ran by doing the following from the project top directory.
-
-1. mkdir build
-2. cd build
-3. cmake ..
-4. make
-5. ./ukf_highway
-
-Note that the programs that need to be written to accomplish the project are src/ukf.cpp, and src/ukf.h
-
-The program main.cpp has already been filled out, but feel free to modify it.
-
-<img src="media/ukf_highway.png" width="700" height="400" />
-
-`main.cpp` is using `highway.h` to create a straight 3 lane highway environment with 3 traffic cars and the main ego car at the center. 
-The viewer scene is centered around the ego car and the coordinate system is relative to the ego car as well. The ego car is green while the 
-other traffic cars are blue. The traffic cars will be accelerating and altering their steering to change lanes. Each of the traffic car's has
-it's own UKF object generated for it, and will update each indidual one during every time step. 
-
-The red spheres above cars represent the (x,y) lidar detection and the purple lines show the radar measurements with the velocity magnitude along the detected angle. The Z axis is not taken into account for tracking, so you are only tracking along the X/Y axis.
-
----
-
-## Other Important Dependencies
-* cmake >= 3.5
-  * All OSes: [click here for installation instructions](https://cmake.org/install/)
-* make >= 4.1 (Linux, Mac), 3.81 (Windows)
-  * Linux: make is installed by default on most Linux distros
-  * Mac: [install Xcode command line tools to get make](https://developer.apple.com/xcode/features/)
-  * Windows: [Click here for installation instructions](http://gnuwin32.sourceforge.net/packages/make.htm)
-* gcc/g++ >= 5.4
-  * Linux: gcc / g++ is installed by default on most Linux distros
-  * Mac: same deal as make - [install Xcode command line tools](https://developer.apple.com/xcode/features/)
-  * Windows: recommend using [MinGW](http://www.mingw.org/)
- * PCL 1.2
-
-## Basic Build Instructions
-
-1. Clone this repo.
-2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make`
-4. Run it: `./ukf_highway`
-
-## Editor Settings
-
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html) as much as possible.
-
-## Generating Additional Data
-
-This is optional!
-
-If you'd like to generate your own radar and lidar modify the code in `highway.h` to alter the cars. Also check out `tools.cpp` to
-change how measurements are taken, for instance lidar markers could be the (x,y) center of bounding boxes by scanning the PCD environment
-and performing clustering. This is similar to what was done in Sensor Fusion Lidar Obstacle Detection.
-
-## Project Instructions and Rubric
-
-This information is only accessible by people who are already enrolled in Sensor Fusion. 
-If you are enrolled, see the project page in the classroom
-for instructions and the project rubric.
+Additional project-specific dependencies:
+- `QuadrotorStateEstimation`: Qt5, OpenGL, GLUT
+- `SensorFusion-ObjectTracking`: PCL
