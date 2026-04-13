@@ -1,50 +1,42 @@
-# Sensor Fusion 
+# Camera
 
-This repository summarizes the lessons and projects from a Sensor Fusion curriculum focused on combining camera and lidar data for perception tasks in autonomous systems. The course includes feature tracking, collision detection, sensor integration, and 3D object tracking techniques.
+This folder contains camera-based exercises and smaller perception projects focused on feature detection, description, and matching.
 
----
+## Current Structure
 
-## Overview
+```text
+Camera/
+├── Camera-Exercises/
+├── FeatureMatching-Exercises/
+└── README.md
+```
 
----
+## Folder Overview
 
-### **L1: Engineering a Collision Detection System**
-Understand:
-- Collision detection concepts  
-- Time-to-Collision (TTC) estimation  
-- Using **lidar** and **camera** data to compute TTC  
+### Camera-Exercises
 
----
+`Camera-Exercises` contains focused computer-vision practice material such as:
+- filtering
+- gradients
+- corner detection
+- descriptor exercises
+- smaller OpenCV-based experiments
 
-### **L2: Tracking Image Features**
-Explore:
-- Image gradients and filtering  
-- Corner detection (e.g., Harris, Shi-Tomasi)  
-- Feature extraction and matching  
-- Tracking features across multiple frames  
+### FeatureMatching-Exercises
 
----
+`FeatureMatching-Exercises` contains a full feature-tracking workflow built around:
+- keypoint detection
+- descriptor extraction
+- descriptor matching
+- frame-to-frame image feature tracking
 
-### **L3 Project: Camera-Based 2D Feature Tracking**
-Implement a full 2D feature-tracking pipeline using OpenCV to extract, match, and track keypoints between images.
+## What This Section Is For
 
----
+Use the `Camera` folder if you want:
+- vision-focused practice
+- feature matching exercises
+- small OpenCV pipelines
+- camera-only perception work
 
-### **L4: Combining Camera and Lidar**
-Learn how to fuse camera and lidar data:
-- Project lidar points into the image  
-- Associate features across multiple sensors  
-- Improve tracking robustness and accuracy using multi-sensor data  
-
----
-
-### **L5 Project: Track an Object in 3D Space**
-Build a system that:
-- Fuses camera and lidar detections  
-- Tracks objects through time  
-- Estimates 3D motion, velocity, and TTC using multi-sensor data  
-
----
-
-
-
+For the camera-lidar fusion pipeline, use:
+- [../SensorFusion-CameraLidar/README.md](/Users/oguz/Desktop/workspace_cpp/Filters/SensorFusion-CameraLidar/README.md)
