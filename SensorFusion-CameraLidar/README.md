@@ -1,14 +1,71 @@
 # SFND 3D Object Tracking
 
-Welcome to the final project of the camera course. By completing all the lessons, you now have a solid understanding of keypoint detectors, descriptors, and methods to match them between successive images. Also, you know how to detect objects in an image using the YOLO deep-learning framework. And finally, you know how to associate regions in a camera image with Lidar points in 3D space. Let's take a look at our program schematic to see what we already have accomplished and what's still missing.
+This repository implements a camera-lidar fusion pipeline for 3D object tracking and time-to-collision estimation. It combines 2D object detection, lidar point association, feature matching across frames, and TTC estimation from both camera and lidar data.
 
 <img src="images/course_code_structure.png" width="779" height="414" />
 
-In this final project, you will implement the missing parts in the schematic. To do this, you will complete four major tasks: 
-1. First, you will develop a way to match 3D objects over time by using keypoint correspondences. 
-2. Second, you will compute the TTC based on Lidar measurements. 
-3. You will then proceed to do the same using the camera, which requires to first associate keypoint matches to regions of interest and then to compute the TTC based on those matches. 
-4. And lastly, you will conduct various tests with the framework. Your goal is to identify the most suitable detector/descriptor combination for TTC estimation and also to search for problems that can lead to faulty measurements by the camera or Lidar sensor. In the last course of this Nanodegree, you will learn about the Kalman filter, which is a great way to combine the two independent TTC measurements into an improved version which is much more reliable than a single sensor alone can be. But before we think about such things, let us focus on your final project in the camera course. 
+## How The Repo Works
+
+The main execution flow lives in [src/cameraLidar.cpp](src/cameraLidar.cpp) and the fusion logic lives in [src/cam_Fusion.cpp](src/cam_Fusion.cpp).
+
+The project runs in this sequence:
+
+1. Detect objects in the camera image.
+YOLO produces 2D bounding boxes for vehicles and other objects in the current frame.
+
+2. Load and crop lidar points.
+The lidar point cloud is filtered so the pipeline focuses on the region in front of the ego vehicle.
+
+3. Project lidar points into the image.
+Each 3D lidar point is transformed into camera coordinates and projected into image pixels.
+
+4. Associate lidar points with camera ROIs.
+If a projected lidar point falls inside a bounding box, it is assigned to that object. This is handled by `clusterLidarWithROI`.
+
+5. Detect and describe image keypoints.
+Keypoints are extracted from the current image and converted into descriptors that can be matched across frames.
+
+6. Match keypoints between consecutive frames.
+Descriptor matching gives image-level correspondences between the previous frame and the current frame.
+
+7. Match bounding boxes over time.
+The code uses keypoint correspondences to determine which bounding box in the previous frame matches which bounding box in the current frame. This is handled by `matchBoundingBoxes`.
+
+8. Isolate the keypoint matches that belong to one object.
+For a selected current bounding box, the pipeline keeps only the matches whose current keypoints fall inside that ROI and rejects obvious outliers. This is handled by `clusterKptMatchesWithROI`.
+
+9. Compute TTC from lidar.
+The object's distance in the previous and current frame is compared using associated lidar points. This is handled by `computeTTCLidar`.
+
+10. Compute TTC from camera.
+The object's scale change in the image is estimated from keypoint pair distance ratios. This is handled by `computeTTCCamera`.
+
+In short, the fusion logic is:
+
+- camera detection tells the system where objects are in 2D
+- lidar provides direct depth for those objects
+- keypoint tracking links the same object across frames
+- TTC is then estimated independently from lidar and camera for the same physical target
+
+## Key Files
+
+- [src/cameraLidar.cpp](src/cameraLidar.cpp): main processing loop and pipeline orchestration
+- [src/cam_Fusion.cpp](src/cam_Fusion.cpp): camera-lidar fusion and TTC functions
+- [src/objectDetection2D.cpp](src/objectDetection2D.cpp): YOLO-based object detection
+- [src/matching2D_Student.cpp](src/matching2D_Student.cpp): keypoint detection, description, and matching
+- [src/dataStructures.h](src/dataStructures.h): shared data containers for frames, bounding boxes, and lidar points
+
+## Repo Steps
+
+1. Build the project with CMake.
+2. Run `3D_object_tracking`.
+3. The program loads synchronized camera and lidar frames.
+4. Objects are detected in the image.
+5. Lidar points are cropped, projected, and associated with image ROIs.
+6. Keypoints are detected and matched across consecutive frames.
+7. Bounding boxes are matched between frames.
+8. TTC is estimated from lidar and camera cues for the tracked object.
+9. Optional visualization windows show detections, lidar association, and fusion results.
 
 ## Dependencies for Running Locally
 * cmake >= 2.8
