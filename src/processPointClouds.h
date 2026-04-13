@@ -15,6 +15,7 @@
 #include <iostream> 
 #include <string>  
 #include <vector>
+#include <boost/filesystem.hpp>
 #include <ctime>
 #include <chrono>
 #include "render/box.h"
