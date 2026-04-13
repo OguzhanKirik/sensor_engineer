@@ -8,6 +8,7 @@ This workspace contains several C++ projects related to sensor fusion, perceptio
 .
 ├── Camera/
 ├── FCND-Controls-CPP/
+├── FixedWing-Control/
 ├── ObstacleDetection-Lidar/
 ├── QuadrotorStateEstimation/
 ├── Radar/
@@ -78,6 +79,20 @@ This is the right area if your goal is:
 - trajectory tracking
 - flight-control tuning
 
+### FixedWing-Control
+
+`FixedWing-Control` is a fixed-wing flight-control and simulation project built around scenario-based controller implementation.
+
+It includes:
+- longitudinal control scenarios
+- lateral and directional control scenarios
+- waypoint and path-following logic
+- fixed-wing flight-control tuning
+- integration with the Udacity fixed-wing simulator
+
+Project documentation:
+- [FixedWing-Control/README.md](/Users/oguz/Desktop/workspace_cpp/Filters/FixedWing-Control/README.md)
+
 ## Domain Folders
 
 ### Camera
@@ -125,6 +140,11 @@ Use `FCND-Controls-CPP` if you want:
 - control-system implementation
 - flight dynamics and controller tuning
 
+Use `FixedWing-Control` if you want:
+- fixed-wing controller design
+- scenario-based flight-control exercises
+- longitudinal and lateral guidance logic
+
 Use `Camera` or `Radar` if you want:
 - modality-specific exercises
 - supporting material and smaller focused projects
@@ -152,3 +172,4 @@ Additional dependencies depend on the project:
 - `SensorFusion-CameraLidar`: OpenCV, Git LFS for model assets
 - `SensorFusion-RadarLidar`: Eigen and project-specific fusion dependencies
 - `ObstacleDetection-Lidar`: typically PCL
+- `FixedWing-Control`: Python plus Udacity fixed-wing simulator dependencies

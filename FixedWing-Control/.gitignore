@@ -1,0 +1,18 @@
+.venv/
+venv/
+venv/*
+__pycache__/
+*.py[cod]
+*.so
+# macOS
+.DS_Store
+
+# Editor directories
+.vscode/
+.idea/
+
+# Environment files
+.env
+
+# Logs
+.log
