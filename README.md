@@ -1,168 +1,154 @@
 # Sensor Fusion Workspace
 
-This workspace contains two main C++ estimation projects:
-
-- `QuadrotorStateEstimation`
-- `SensorFusion-ObjectTracking`
-
-It also includes domain folders for related sensor-fusion work:
-
-- `Camera`
-- `Lidar`
-- `Radar`
-
-These parts of the workspace cover different sensor modalities and project types, so they should be read as separate areas rather than one single build target.
+This workspace contains several C++ projects related to sensor fusion, perception, tracking, and control. The folders are not one combined build; each project should be treated as its own codebase with its own dependencies, build flow, and goals.
 
 ## Workspace Structure
 
 ```text
 .
 ├── Camera/
-├── Lidar/
+├── FCND-Controls-CPP/
+├── ObstacleDetection-Lidar/
 ├── QuadrotorStateEstimation/
 ├── Radar/
-├── SensorFusion-ObjectTracking/
+├── SensorFusion-CameraLidar/
+├── SensorFusion-RadarLidar/
 └── README.md
 ```
 
-Local-only note:
-- `QuadrotorStateEstimation.git-backup/` is not part of the workspace structure. It is only a local backup of the old nested `.git` directory and should be removed when no longer needed.
+## Main Projects
 
-## QuadrotorStateEstimation
+### QuadrotorStateEstimation
 
-`QuadrotorStateEstimation` is a quadrotor state estimation simulator project based on a partially implemented EKF pipeline.
+`QuadrotorStateEstimation` is a simulator-based state estimation project for a quadrotor.
 
 It focuses on:
 - IMU-based attitude estimation
 - EKF prediction for position, velocity, and yaw
-- magnetometer yaw correction
-- GPS position and velocity correction
-- covariance tuning and estimator consistency checks in simulation
-
-The simulator provides ground truth, which makes it useful for:
-- validating estimator accuracy
-- checking sigma consistency against true error
-- tuning process and measurement noise
-- understanding the full predict/update flow of an EKF in a controlled environment
-
-The project is organized around simulation scenarios, especially:
-- `06_SensorNoise`
-- `07_AttitudeEstimation`
-- `08_PredictState`
-- `09_PredictCovariance`
-- `10_MagUpdate`
-- `11_GPSUpdate`
-
-Build pattern:
-
-```bash
-cd QuadrotorStateEstimation
-mkdir -p build
-cd build
-cmake ..
-cmake --build . -j2
-./CPPEstSim
-```
-
-Notes:
-- This project uses Qt5, OpenGL, and GLUT.
-- On macOS, you may need to pass `CMAKE_PREFIX_PATH` so CMake can find `qt@5`.
+- magnetometer fusion
+- GPS position and velocity updates
+- covariance tuning and estimator consistency checks
 
 Project documentation:
 - [QuadrotorStateEstimation/README.md](/Users/oguz/Desktop/workspace_cpp/Filters/QuadrotorStateEstimation/README.md)
 
-## SensorFusion-ObjectTracking
+### SensorFusion-CameraLidar
 
-`SensorFusion-ObjectTracking` is a lidar/radar highway object-tracking project for benchmarking classical filters and smoothers.
+`SensorFusion-CameraLidar` is a camera-lidar fusion project for 3D object tracking and time-to-collision estimation.
 
-It includes:
-- EKF
-- IEKF
-- UKF
-- CKF
-- PF
-- IMM
-- RTS smoothing
-- fixed-lag smoothing
-- an MHE scaffold integrated into the same highway test harness
+It combines:
+- YOLO-based 2D object detection
+- lidar point projection into the image
+- ROI-based lidar association
+- keypoint matching across frames
+- bounding-box tracking over time
+- TTC estimation from lidar and camera
 
-The focus here is:
-- object tracking rather than robot localization
-- comparing estimators under the same simulated highway scenario
-- RMSE-based evaluation for tracked vehicle states
+Core files:
+- [SensorFusion-CameraLidar/src/cameraLidar.cpp](/Users/oguz/Desktop/workspace_cpp/Filters/SensorFusion-CameraLidar/src/cameraLidar.cpp)
+- [SensorFusion-CameraLidar/src/cam_Fusion.cpp](/Users/oguz/Desktop/workspace_cpp/Filters/SensorFusion-CameraLidar/src/cam_Fusion.cpp)
+- [SensorFusion-CameraLidar/README.md](/Users/oguz/Desktop/workspace_cpp/Filters/SensorFusion-CameraLidar/README.md)
 
-Build pattern:
+### SensorFusion-RadarLidar
 
-```bash
-cd SensorFusion-ObjectTracking/build
-cmake ..
-cmake --build . -j2
-./ukf_highway
-```
+`SensorFusion-RadarLidar` is a radar-lidar fusion project built around tracked-object state estimation.
 
-Project documentation:
-- [SensorFusion-ObjectTracking/README.md](/Users/oguz/Desktop/workspace_cpp/Filters/SensorFusion-ObjectTracking/README.md)
+It is the right project if you want:
+- multi-sensor tracking
+- Kalman-filter-based fusion
+- RMSE-style evaluation of tracked motion
 
-## Camera
+### ObstacleDetection-Lidar
 
-`Camera` contains camera-based perception and computer-vision projects.
+`ObstacleDetection-Lidar` focuses on lidar point-cloud perception.
+
+Typical work here includes:
+- point-cloud filtering
+- segmentation
+- clustering
+- obstacle extraction
+- geometric processing in 3D
+
+### FCND-Controls-CPP
+
+`FCND-Controls-CPP` is a controls-focused C++ project related to quadrotor control and flight dynamics.
+
+This is the right area if your goal is:
+- controller implementation
+- trajectory tracking
+- flight-control tuning
+
+## Domain Folders
+
+### Camera
+
+`Camera` contains camera-based exercises and supporting perception projects.
 
 Typical work in this area includes:
 - feature detection and matching
 - image-based tracking
-- 3D object tracking with camera data
-- calibration and perception exercises
+- calibration exercises
+- camera-lidar fusion coursework and reference implementations
 
-This folder is the right place to look if you want vision-focused pipelines rather than state-estimation-only code.
+### Radar
 
-## Lidar
-
-`Lidar` contains lidar-focused perception work.
+`Radar` contains radar-related signal-processing exercises and detection workflows.
 
 Typical work in this area includes:
-- point cloud filtering
-- segmentation
-- clustering
-- obstacle detection
-- geometric processing on 3D lidar data
+- radar target generation
+- FFT and Doppler processing
+- CFAR concepts
+- radar-specific measurement interpretation
 
-This folder is primarily about perception from point clouds rather than recursive state estimation.
-
-## Radar
-
-`Radar` contains radar-related signal processing and detection work.
-
-Typical work in this area includes:
-- radar measurement interpretation
-- target detection concepts
-- radar-specific processing pipelines
-
-This folder is the radar-specific side of the workspace, separate from the lidar/radar object-tracking benchmark in `SensorFusion-ObjectTracking`.
-
-## Choosing The Right Project
+## How To Choose A Project
 
 Use `QuadrotorStateEstimation` if you want:
+- simulator-based EKF work
 - IMU/GPS/magnetometer fusion
-- a state-estimation workflow with known simulator ground truth
-- EKF prediction/update debugging on a flying vehicle
+- estimator tuning with known ground truth
 
-Use `SensorFusion-ObjectTracking` if you want:
-- lidar/radar target tracking
-- multiple classical filters in one benchmark
-- smoothing methods such as RTS and fixed-lag on tracked-object trajectories
+Use `SensorFusion-CameraLidar` if you want:
+- camera-lidar perception fusion
+- 3D object association in image space
+- TTC estimation from two sensing modalities
 
-Use `Camera`, `Lidar`, or `Radar` if you want:
-- modality-specific perception exercises
-- preprocessing and detection pipelines tied to one sensor type
-- supporting perception projects outside the two main estimation benchmarks
+Use `SensorFusion-RadarLidar` if you want:
+- radar-lidar target tracking
+- Kalman-filter-style multi-sensor fusion
+- tracked-object evaluation workflows
 
-## Dependencies
+Use `ObstacleDetection-Lidar` if you want:
+- lidar-only perception
+- point-cloud segmentation and clustering
 
-Common dependencies across the workspace:
+Use `FCND-Controls-CPP` if you want:
+- control-system implementation
+- flight dynamics and controller tuning
+
+Use `Camera` or `Radar` if you want:
+- modality-specific exercises
+- supporting material and smaller focused projects
+
+## Build Notes
+
+There is no single workspace-wide build. Build each project inside its own directory.
+
+Typical pattern:
+
+```bash
+mkdir -p build
+cd build
+cmake ..
+cmake --build . -j2
+```
+
+Project-specific dependencies vary, but common requirements across the workspace include:
 - CMake
 - a modern C++ compiler
 - Eigen
 
-Additional project-specific dependencies:
+Additional dependencies depend on the project:
 - `QuadrotorStateEstimation`: Qt5, OpenGL, GLUT
-- `SensorFusion-ObjectTracking`: PCL
+- `SensorFusion-CameraLidar`: OpenCV, Git LFS for model assets
+- `SensorFusion-RadarLidar`: Eigen and project-specific fusion dependencies
+- `ObstacleDetection-Lidar`: typically PCL
