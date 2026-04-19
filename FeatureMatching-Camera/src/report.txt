@@ -1,0 +1,40 @@
+MP.1 Data Buffer Optimization
+Created a queue-like data structure that stores image data by appending to the back of a vector. When the size reaches 3 or more, the front element is automatically removed to maintain a maximum size of 2.
+
+MP.2 Keypoint Detection
+Implemented all  Keypoint Detection Detectors 
+
+MP.3 Keypoint Removal
+Implemented keypoint removal with rec
+
+MP.4 Keypoint Descriptors
+Implemented all necessary Keypoint Descriptors 
+
+MP.5 DescriptorMatching
+Implemented FLANN and k-nearest neighbour 
+
+MP.6 Descriptor Distance Ratio
+Implemented in matching2D_student.cpp.
+
+MP.7 Performance Evaluation 1
+Look at the result.txt for a summary of data.
+
+MP.8 Performance Evaluation 2
+Look at the result.txt for a summary of data.
+
+MP.9 Performance Evaluation 3
+Look at the result.txt for a summary of data.
+FAST + BRIEF, FAST + BRISK, FAST + ORB
+
+These combinations were chosen for their excellent speed and efficiency:
+
+FAST + BRIEF (0.0077768)
+
+FAST + BRISK ( 0.00757409)
+
+FAST + ORB ( 0.00756342 )
+
+They deliver a good balance of performance with sufficient keypoints (883, 776, 859 respectively) and diverse keypoint distribution, especially around vehicle boundaries, roof, and rear lights — ensuring both speed and spatial coverage.
+
+
+ 

@@ -1,0 +1,64 @@
+# SFND 2D Feature Tracking
+
+
+## Tracking Performance Evaluation
+### Evaluation 1: Keypoints Detection
+* Table 1: Number of keypoints detected on the preceding vehicle for 10 consecutive images, plus description of keypoints distribution
+
+| Detector | Shi-Tomasi | Harris | FAST    | BRISK    | ORB*    | Akaze   | SIFT |
+| ---      | ---        | ---    | ---     | ---      | ---     | ---     | ---  |
+| Image 1  | 1370       | 115    | 2192    | 2757     | 500    | 1351    | 1438 |
+| Image 2  | 1301       | 98     | 2179    | 2777     | 500    | 1327    | 1371 |
+| Image 3  | 1361       | 113    | 2159    | 2741     | 500    | 1311    | 1380 |
+| Image 4  | 1358       | 121    | 2192    | 2735     | 500    | 1351    | 1335 |
+| Image 5  | 1333       | 160    | 2180    | 2757     | 500    | 1360    | 1305 |
+| Image 6  | 1284       | 383    | 2180    | 2695     | 500    | 1347    | 1369 |
+| Image 7  | 1322       | 85     | 2142    | 2715     | 500    | 1363    | 1396 |
+| Image 8  | 1366       | 210    | 2070    | 2628     | 500    | 1311    | 1382 |
+| Image 9  | 1389       | 171    | 2131    | 2639     | 500    | 1358    | 1463 |
+| Image 10 | 1339       | 281    | 2139    | 2672     | 500    | 1331    | 1422 |
+| Distribution | Dense on vehicle plate and boundary, rare on rear window | Dense on boundary, roof and rear lights, rare on rear window | Very dense on vehicle boundary, dense on roof and rear lights, rare on rear window | Very dense on vehicle boundary, roof, dense on rear lights, rare on plate, shadow and lower part of the vehicle| Very dense on vehicle boundary, roof, dense on rear lights, rare on rear window | Dense on boundary, roof and rear lights, rare on rear window, lower part of vehicle | Dense on boundary, roof rear lights and vechicle plate, rare on rear window, shadow and lower part of the vehicle |
+
+### Evaluation 2: Keypoints Matching
+* Table 2: total number of keypoints matched on the preceding vehicle for 10 consecutive images with different combinations of detectors and descriptors
+
+
+| Combinations | Shi-Tomasi | Harris | FAST     | BRISK | ORB* | Akaze | SIFT |
+| ---          | ---        | ---    | ---      | ---   | ---  | ---   | ---  |
+| **BRISK**    | 690        | 121    | 914      | 1298  | 2154 | 1270  |   536|
+| **BRIEF**    | 816        | 141    | 1047      | 1344  | 450 | 1087  | 597  |
+| **ORB**      | 768        | 145    | 1019      | 933   | 530 | 918   | N/A  |
+| **FREAK**    | 574        | 123    | 797      | 1093  | 346 | 973   | 500  |
+| **AKAZE**    | N/A        | N/A    | N/A      | N/A   | N/A  | 1172  | N/A  |
+| **SIFT**     | 927        | 163    | 1253     | 1646  | 763 | 1270  | 800  |
+
+
+### Evaluation 3: Overall Keypoints Detection / Description Recommendation
+* Table 3: process time of keypoints detection and descriptor extraction on the preceding vehicle for 10 consecutive images
+
+Detector
+| Combinations | Shi-Tomasi   | Harris   | FAST        | BRISK      | ORB*    | Akaze   | SIFT    |
+| ---          | ---          | ---      | ---         | ---        | ---     | ---     | ---     |
+| **BRISK**    | 0.135717     | 0.139036 | 0.00757409  | 0.349076   | 0.14085  | 2.21616  | N/A  |
+| **BRIEF**    | 0.158583     | 0.188092 | 0.0077768   | 0.31846    | 0.185595  | 2.39375  | 1.55221  |
+| **ORB**      | 0.130627     | 0.165469 | 0.00756342  | 0.304826   | 0.196763  | 2.29036  | N/A     |
+| **FREAK**    | 0.126412     | 0.133625 | 0.0295579   | 0.307345   | 0.183604  | 2.10409  | 1.48032 |
+| **AKAZE**    | N/A          | N/A      | N/A         | N/A        | N/A     | 758.23  | N/A     |
+| **SIFT**     | 0.151384     | 0.133746 | 0.00768148   | 0.307808  | 0.132719  | 537.14  | 1.31337  |
+
+Descriptor
+| Combinations | Shi-Tomasi | Harris     | FAST        | BRISK       | ORB*        | Akaze        | SIFT    |
+| ---          | ---        | ---        | ---         | ---         | ---         | ---         | ---     |
+| **BRISK**    | 0.0187827  | 00.0110504 | 0.418347    | 0.0221592   | 1.00534     | 0.709024    | N/A  |
+| **BRIEF**    | 0.0115266  | 0.00855705 | 0.00893511  | 0.00783908  | 0.00488123  | 0.168528    | 0.00494188  |
+| **ORB**      | 0.046634   | 0.00622095 | 0.0535799   | 0.0320317   | 0.0961692   | 0.0311004   | N/A     |
+| **FREAK**    | 0.297531   | 0.264593   | 0.304625    | 0.268239    | 0.253456    |  0.246793    | 0.535831 |
+| **AKAZE**    | N/A        | N/A        | N/A         | N/A         | N/A         | 2.08412      | N/A     |
+| **SIFT**     | 0.214867   | 0.254393   | 0.436792    |  0.546809  | 0.922005  | 2.24307  | 928.13  |1.24524
+
+### Final Recommendation for Detector / Descriptor Combinations as for Vehicle Detection
+* TOP 3 choices: **`FAST` + `BRIEF`**, **`FAST` + `BRISK`** and **`FAST` + `ORB`**
+    * Reason for choosing these three combinations are:
+        * Very fast: processing speed is the most important factor for choosing them, which are 14.48 ms, 22.69 ms and 38.42 ms respectively to complete the tests
+        * Fairly sufficient number of keypoints detected & matched: second criteria is to have good amount of keypoints detected and matched, these three provide 883, 776 and 859 respectively, although not the best but good enough
+        * Diverse distribution within the image: the distribution of `FAST` detector includes keypoints detected dense on vehicle boundary, dense on roof and rear lights, rare on rear window, which is a good diversity
